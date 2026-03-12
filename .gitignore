@@ -2,8 +2,8 @@
 node_modules/
 client/node_modules/
 
-# User data
-data/
+# User data (root level only, not client/src/data)
+/data/
 
 # Environment variables
 .env

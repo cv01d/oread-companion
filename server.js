@@ -188,12 +188,16 @@ app.post('/api/chat', async (req, res) => {
       Promise.all([
         saveMessageToSession(sessionId, userMsg),
         saveMessageToSession(sessionId, assistantMsg)
-      ]).then(async () => {
+      ]).then(async ([userMsgId, assistantMsgId]) => {
         console.log('✅ Messages saved to session');
 
         // Add to vector store if memory enabled
         if (settings?.general?.memory) {
-          langchainRAG.addDocuments(sessionId, [userMsg, assistantMsg])
+          // Add IDs to messages for vector storage
+          langchainRAG.addDocuments(sessionId, [
+            { ...userMsg, id: userMsgId },
+            { ...assistantMsg, id: assistantMsgId }
+          ])
             .catch(err => console.error('Embedding error:', err));
         }
 
