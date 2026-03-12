@@ -23,9 +23,8 @@ class MCPClientService {
 
       console.log('🔌 Initializing MCP clients...');
 
-      // Connect to Vector Store MCP server (custom implementation)
-      await this.connectToServer('vector-store');
-      console.log('✅ Connected to Vector Store MCP server');
+      // Vector Store MCP server is DISABLED - now using SQLite directly
+      console.log('ℹ️  Vector storage: SQLite (FAISS removed)');
 
       console.log('✅ All MCP clients initialized');
       console.log('ℹ️  SQLite and filesystem operations use direct access (not MCP)');
@@ -89,54 +88,21 @@ class MCPClientService {
     }
   }
 
-  // Vector store operations via MCP
+  // Vector store operations - DEPRECATED (now using SQLite directly)
+  // These methods are kept for backward compatibility but will be removed
   async addVectors(sessionId, documents, vectors) {
-    try {
-      const result = await this.clients.vectorStore.callTool({
-        name: 'add_vectors',
-        arguments: {
-          session_id: sessionId,
-          documents,
-          vectors
-        }
-      });
-      return result;
-    } catch (error) {
-      console.error('Vector store MCP add error:', error);
-      throw error;
-    }
+    console.warn('⚠️  addVectors() is deprecated - vectors are now stored in SQLite');
+    return { success: true, message: 'Using SQLite vector storage' };
   }
 
   async searchVectors(sessionId, queryVector, topK = 5) {
-    try {
-      const result = await this.clients.vectorStore.callTool({
-        name: 'semantic_search',
-        arguments: {
-          session_id: sessionId,
-          query_vector: queryVector,
-          top_k: topK
-        }
-      });
-      return JSON.parse(result.content[0].text);
-    } catch (error) {
-      console.error('Vector store MCP search error:', error);
-      throw error;
-    }
+    console.warn('⚠️  searchVectors() is deprecated - use vectorSearch service instead');
+    return { success: false, message: 'Use vectorSearch.search() instead' };
   }
 
   async getIndexStats(sessionId) {
-    try {
-      const result = await this.clients.vectorStore.callTool({
-        name: 'get_index_stats',
-        arguments: {
-          session_id: sessionId
-        }
-      });
-      return JSON.parse(result.content[0].text);
-    } catch (error) {
-      console.error('Vector store MCP stats error:', error);
-      throw error;
-    }
+    console.warn('⚠️  getIndexStats() is deprecated - query message_vectors table instead');
+    return { success: false, message: 'Query message_vectors table instead' };
   }
 
   async close() {

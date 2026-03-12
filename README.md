@@ -5,24 +5,35 @@ A modern, full-stack chat interface with advanced memory and character roleplay 
 ## Current State
 Use at your own risk. This app is in rebuild and while fully working and ready to use, it has not been fully bug tested and reviewed. Using it means you assume full liability for what goes wrong or any security issues. I hope to have it fully reviewed within the next few weeks, until then feel free to use it if you want.
 
+### Latest Update (v3.1.0 - 2026-03-12)
+**SQLite Vector Storage Migration** - Replaced FAISS file-based storage with SQLite BLOBs:
+- ✅ No more file locking issues - WAL mode handles concurrent access
+- ✅ Single database file (`chat.db`) contains everything
+- ✅ In-memory cosine similarity (pure JavaScript, no C++ dependencies)
+- ✅ Atomic transactions across vectors + messages
+- ✅ Simplified architecture - one storage system
+
+See [FAISS_REMOVAL_NOTES.md](FAISS_REMOVAL_NOTES.md) for migration details.
+
 
 ## Features
 
-### 🧠 Memory System (NEW v3.0.0)
+### 🧠 Memory System (v3.0.0 → v3.1.0 SQLite Vector Migration)
 - **Session Management** - Create, switch, and manage multiple conversation sessions
-- **Message Persistence** - All messages stored in SQLite database via MCP
-- **RAG (Retrieval Augmented Generation)** - Semantic search using FAISS and embeddings
+- **Message Persistence** - All messages stored in SQLite database
+- **RAG (Retrieval Augmented Generation)** - Semantic search using SQLite BLOB vector storage
   - Automatically activates when session exceeds 50 messages
   - Uses recent 20 messages + top 5 semantically similar messages
   - Powered by Ollama's nomic-embed-text model
+  - **NEW v3.1.0**: Vectors stored directly in SQLite, no separate files
 - **Infinite Scroll History** - Load entire conversation history with pagination
 - **Auto-Extraction** - AI-powered character detail extraction with user approval
   - Analyzes every 5 messages in roleplay mode
   - Suggests updates to personality, backstory, knowledge, appearance
   - Confidence scoring and category organization
   - Preview before applying changes
-- **Vector Store** - FAISS-based semantic search for each session
-- **Background Embeddings** - Automatic vector generation for all messages
+- **Vector Storage** - SQLite BLOB storage with WAL mode for concurrent access
+- **Background Embeddings** - Automatic vector generation stored in message_vectors table
 
 ### 🎭 Comprehensive Settings System (v2.0.0)
 - **Two Modes** - Roleplay and Utility/Normal modes
@@ -64,10 +75,14 @@ Use at your own risk. This app is in rebuild and while fully working and ready t
 
 ### 🏗️ Architecture
 - **LangChain Integration** - RAG orchestration with Ollama embeddings
+- **SQLite Vector Storage** (NEW v3.1.0) - Vectors stored as BLOBs with WAL mode
+  - No separate FAISS files - everything in chat.db
+  - In-memory cosine similarity search (pure JavaScript)
+  - Sliding window (100 vectors) prevents memory issues
+  - Model versioning and checksum verification
 - **MCP (Model Context Protocol)** - Standardized data access layer
   - SQLite MCP for database operations
   - Filesystem MCP for settings management
-  - Custom Vector Store MCP for FAISS search
   - Custom Settings Tools MCP for character extraction
 - **Zustand State Management** - Centralized state with no prop drilling
 - **Granular Components** - Reusable UI primitives and modular design
@@ -251,14 +266,14 @@ When memory is enabled in roleplay mode:
 │   └── memory.js            # RAG/embedding API
 │
 ├── mcp-servers/             # Custom MCP servers
-│   ├── vector-store-server.js      # FAISS vector store MCP
 │   └── settings-tools-server.js    # Settings extraction tools MCP
 │
+├── scripts/                 # Maintenance scripts (NEW v3.1.0)
+│   ├── migrate-vectors-to-sqlite.js    # FAISS → SQLite migration
+│   └── verify-vector-integrity.js      # Weekly checksum verification
+│
 ├── data/                    # Persistent data
-│   ├── chat.db              # SQLite database (auto-created)
-│   ├── vector-store/        # FAISS indexes per session
-│   │   ├── {session-id}.index
-│   │   └── {session-id}.meta.json
+│   ├── chat.db              # SQLite database (includes vectors as BLOBs)
 │   └── settings/            # User settings (individual JSON files)
 │       ├── mode.json
 │       ├── roleplay.json
@@ -356,14 +371,14 @@ User sends message
 Chat endpoint (with sessionId)
   ↓
 Check: session > 50 messages?
-  ├─ YES → Use RAG (recent 20 + top 5 semantic)
+  ├─ YES → Use RAG (recent 20 + top 5 semantic from SQLite)
   └─ NO  → Use full history
   ↓
 Stream response (SSE)
   ↓
 Background tasks:
-  ├─ Save to SQLite (via MCP)
-  ├─ Create embeddings → FAISS
+  ├─ Save to SQLite
+  ├─ Create embeddings → Store as BLOBs in message_vectors table
   └─ Every 5 msgs → Run extraction agent
       └─ Suggest character updates (user approval required)
 ```
@@ -408,28 +423,32 @@ App.jsx (Minimal - routing & initialization)
 ┌─────────────────────────────────────────────────────────┐
 │         Express Backend (port 3001)                      │
 │  ┌───────────────────────────────────────────────────┐  │
-│  │  LangChain + MCP Services                         │  │
+│  │  LangChain + SQLite Services (v3.1.0)             │  │
 │  │  - langchainRAG.js (Ollama embeddings)            │  │
+│  │  - vectorSearch.js (In-memory cosine similarity)  │  │
+│  │  - database.js (SQLite + WAL mode)                │  │
 │  │  - extractionAgent.js (Character analysis)        │  │
-│  │  - mcpClient.js (Manages 4 MCP servers)           │  │
+│  │  - sessionSecurity.js (AES-256 encryption)        │  │
 │  └───────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────┘
-           │                    │                    │
-           │ HTTP               │ stdio              │ stdio
-           ▼                    ▼                    ▼
-┌──────────────────┐  ┌──────────────────┐  ┌────────────────┐
-│ Ollama (11434)   │  │ MCP Servers      │  │ Vector Store   │
-│ - Chat LLM       │  │ - SQLite Server  │  │ - FAISS Index  │
-│ - nomic-embed    │  │ - Filesystem     │  │ - Per Session  │
-└──────────────────┘  │ - Settings Tools │  └────────────────┘
+           │                    │
+           │ HTTP               │ stdio
+           ▼                    ▼
+┌──────────────────┐  ┌──────────────────┐
+│ Ollama (11434)   │  │ MCP Servers      │
+│ - Chat LLM       │  │ - SQLite Server  │
+│ - nomic-embed    │  │ - Filesystem     │
+└──────────────────┘  │ - Settings Tools │
                       └──────────────────┘
                                 │
                                 ▼
                       ┌──────────────────┐
                       │ Persistent Data  │
                       │ - chat.db        │
+                      │   (includes      │
+                      │    vectors as    │
+                      │    BLOBs)        │
                       │ - settings/*.json│
-                      │ - vector-store/  │
                       └──────────────────┘
 ```
 
@@ -445,12 +464,14 @@ App.jsx (Minimal - routing & initialization)
 5. System uses:
    - **Recent 20 messages** (conversation continuity)
    - **Top 5 semantically similar messages** (relevant context from entire history)
-6. All messages embedded using `nomic-embed-text` and stored in FAISS
+6. All messages embedded using `nomic-embed-text` and stored as BLOBs in SQLite
 
 **Benefits**:
 - Maintain context in very long conversations (100+ messages)
 - AI recalls relevant information from early in conversation
 - Semantic search finds related topics, not just keywords
+- **NEW v3.1.0**: No file locking - SQLite WAL mode handles concurrent access
+- **NEW v3.1.0**: Single database file - atomic transactions across vectors + messages
 
 ### Auto-Extraction
 
@@ -554,9 +575,12 @@ App.jsx (Minimal - routing & initialization)
 - **Framework**: Express.js
 - **AI Integration**: Ollama (official `ollama` npm package v0.6.3+)
 - **Memory System**: LangChain + Model Context Protocol (MCP)
-- **Database**: SQLite (via MCP server)
-- **Vector Store**: FAISS (via custom MCP server)
-- **Embeddings**: Ollama nomic-embed-text model
+- **Database**: SQLite with WAL mode (concurrent reads during writes)
+- **Vector Store**: SQLite BLOB storage (v3.1.0 - replaced FAISS)
+  - In-memory cosine similarity (pure JavaScript)
+  - Sliding window (100 vectors) for efficient searches
+  - Checksums for integrity verification
+- **Embeddings**: Ollama nomic-embed-text model (768 dimensions)
 - **Communication**: REST API + Server-Sent Events (SSE) for streaming
 
 ### Frontend
@@ -572,17 +596,31 @@ App.jsx (Minimal - routing & initialization)
 
 ### External Dependencies
 - **Ollama Service**: Must be running locally on `http://localhost:11434`
-- **MCP Servers**: SQLite, Filesystem, Vector Store (auto-started by backend)
+- **MCP Servers**: SQLite, Filesystem, Settings Tools (auto-started by backend)
 - **Embedding Model**: nomic-embed-text (download: `ollama pull nomic-embed-text`)
+- **No External Vector Store**: Vectors stored directly in SQLite (v3.1.0)
 
 ## Version History
+
+### v3.1.0 (2026-03-12) - SQLite Vector Storage Migration
+- ✅ **FAISS Removal** - Eliminated file-based vector storage entirely
+- ✅ **SQLite BLOB Vectors** - Vectors stored directly in message_vectors table
+- ✅ **WAL Mode** - Enabled Write-Ahead Logging for concurrent access safety
+- ✅ **In-Memory Search** - Pure JavaScript cosine similarity (no FAISS dependency)
+- ✅ **Sliding Window** - Last 100 vectors loaded for searches (prevents memory issues)
+- ✅ **Model Versioning** - Track embedding model changes to prevent drift
+- ✅ **Checksum Verification** - SHA-256 checksums for vector integrity
+- ✅ **Session Security** - AES-256-CBC encryption with machine-specific keys
+- ✅ **No File Locking** - Single SQLite file, atomic transactions
+- ✅ **Migration Scripts** - Tools for FAISS → SQLite migration + weekly integrity checks
+- 📄 **Documentation** - FAISS_REMOVAL_NOTES.md, docs/SQLITE_VECTOR_MIGRATION.md
 
 ### v3.0.0 (2026-03-11) - Memory System with LangChain + MCP
 - ✅ LangChain Integration - RAG orchestration
 - ✅ MCP Architecture - Model Context Protocol for data access
 - ✅ Session Management - Multiple conversation sessions
 - ✅ Message Persistence - SQLite database storage
-- ✅ Vector Memory (RAG) - FAISS semantic search
+- ✅ Vector Memory (RAG) - Semantic search with embeddings
 - ✅ Auto-Extraction - AI-powered character detail extraction
 - ✅ Infinite Scroll History - Complete message history with pagination
 - ✅ Background Embeddings - Automatic vector generation

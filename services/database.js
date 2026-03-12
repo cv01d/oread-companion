@@ -29,6 +29,10 @@ class DatabaseService {
 
       console.log('✅ Connected to SQLite database');
 
+      // CRITICAL: Enable WAL mode for concurrent reads/writes
+      await this.db.exec('PRAGMA journal_mode = WAL;');
+      console.log('✅ WAL mode enabled - concurrent access safe');
+
       // Enable foreign key constraints (MUST be done per connection in SQLite)
       await this.db.exec('PRAGMA foreign_keys = ON;');
       console.log('✅ Foreign key constraints enabled');
@@ -83,7 +87,7 @@ class DatabaseService {
       );
     `);
 
-    // Embeddings table
+    // Embeddings table (legacy - will be replaced by message_vectors)
     await this.db.exec(`
       CREATE TABLE IF NOT EXISTS embeddings (
         id TEXT PRIMARY KEY,
@@ -97,6 +101,23 @@ class DatabaseService {
         metadata TEXT,
         FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE,
         FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE
+      );
+    `);
+
+    // Message vectors table (NEW - replaces FAISS files)
+    await this.db.exec(`
+      CREATE TABLE IF NOT EXISTS message_vectors (
+        id TEXT PRIMARY KEY,
+        message_id TEXT NOT NULL,
+        session_id TEXT NOT NULL,
+        vector BLOB NOT NULL,
+        dimension INTEGER NOT NULL,
+        model TEXT NOT NULL,
+        model_version TEXT,
+        checksum TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE,
+        FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
       );
     `);
 
@@ -124,6 +145,22 @@ class DatabaseService {
     await this.db.exec(`
       CREATE INDEX IF NOT EXISTS idx_sessions_updated
       ON sessions(updated_at DESC);
+    `);
+
+    // Indexes for message_vectors table
+    await this.db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_vectors_session
+      ON message_vectors(session_id);
+    `);
+
+    await this.db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_vectors_message
+      ON message_vectors(message_id);
+    `);
+
+    await this.db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_vectors_model
+      ON message_vectors(model, model_version);
     `);
   }
 

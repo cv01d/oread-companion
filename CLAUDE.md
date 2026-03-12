@@ -20,7 +20,7 @@
 8. **Persistent Settings Storage** in individual JSON files
 9. **Memory System** with session management and RAG (NEW v3.0.0)
 10. **Chat History Persistence** via SQLite and MCP (NEW v3.0.0)
-11. **Vector Memory** using FAISS and LangChain (NEW v3.0.0)
+11. **Vector Memory** using SQLite BLOB storage (v3.1.0 - migrated from FAISS)
 12. **Auto-Extraction** of character details from conversations (NEW v3.0.0)
 
 ---
@@ -33,9 +33,12 @@
 - **AI Integration**: Ollama (via official `ollama` npm package v0.6.3+)
 - **Communication**: REST API + Server-Sent Events (SSE) for streaming
 - **Memory System**: LangChain + Model Context Protocol (MCP) (NEW v3.0.0)
-- **Database**: SQLite (via MCP server)
-- **Vector Store**: FAISS (via custom MCP server)
-- **Embeddings**: Ollama nomic-embed-text model
+- **Database**: SQLite with WAL mode (concurrent reads during writes)
+- **Vector Store**: SQLite BLOB storage (v3.1.0 - replaced FAISS)
+  - In-memory cosine similarity search (pure JavaScript)
+  - Sliding window (100 vectors) for efficient memory usage
+  - Model versioning and checksum verification
+- **Embeddings**: Ollama nomic-embed-text model (768 dimensions)
 
 ### Frontend
 - **Framework**: React 19
@@ -50,8 +53,9 @@
 ### External Dependencies
 - **Ollama Service**: Must be running locally on `http://localhost:11434`
 - Models are stored and managed by Ollama
-- **MCP Servers**: SQLite, Filesystem, Vector Store (auto-started by backend)
+- **MCP Servers**: SQLite, Filesystem, Settings Tools (auto-started by backend)
 - **Embedding Model**: nomic-embed-text (download: `ollama pull nomic-embed-text`)
+- **No External Vector Store**: Vectors stored directly in SQLite (v3.1.0)
 
 ---
 
@@ -97,19 +101,24 @@
            │                    │                    │
            │ HTTP               │ stdio              │ stdio
            ▼                    ▼                    ▼
-┌──────────────────┐  ┌──────────────────┐  ┌────────────────┐
-│ Ollama (11434)   │  │ MCP Servers      │  │ Vector Store   │
-│ - Chat LLM       │  │ - SQLite Server  │  │ - FAISS Index  │
-│ - Embeddings     │  │ - Filesystem     │  │ - Custom MCP   │
-│ - nomic-embed    │  │ - Settings Tools │  │ - Per Session  │
-└──────────────────┘  └──────────────────┘  └────────────────┘
+┌──────────────────┐  ┌──────────────────┐
+│ Ollama (11434)   │  │ MCP Servers      │
+│ - Chat LLM       │  │ - SQLite Server  │
+│ - Embeddings     │  │ - Filesystem     │
+│ - nomic-embed    │  │ - Settings Tools │
+└──────────────────┘  └──────────────────┘
                                 │
                                 ▼
                       ┌──────────────────┐
                       │ Persistent Data  │
                       │ - chat.db        │
+                      │   (includes      │
+                      │    vectors as    │
+                      │    BLOBs in      │
+                      │    message_      │
+                      │    vectors       │
+                      │    table)        │
                       │ - settings/*.json│
-                      │ - vector-store/  │
                       └──────────────────┘
 ```
 
@@ -193,9 +202,11 @@ Zustand Store (useStore.js - Extended)
 │
 ├── services/
 │   ├── ollama.js                    # Ollama API wrapper
-│   ├── database.js                  # SQLite schema initialization [NEW]
+│   ├── database.js                  # SQLite schema + WAL mode [v3.1.0]
 │   ├── mcpClient.js                 # MCP client for all servers [NEW]
-│   ├── langchainRAG.js              # LangChain RAG orchestration [NEW]
+│   ├── langchainRAG.js              # LangChain RAG orchestration [v3.1.0]
+│   ├── vectorSearch.js              # In-memory cosine similarity [NEW v3.1.0]
+│   ├── sessionSecurity.js           # AES-256 encryption [NEW v3.1.0]
 │   └── extractionAgent.js           # Character extraction agent [NEW]
 │
 ├── controllers/
@@ -207,16 +218,16 @@ Zustand Store (useStore.js - Extended)
 │   └── memory.js                    # RAG/embedding API [NEW]
 │
 ├── mcp-servers/                     # Custom MCP Servers [NEW]
-│   ├── vector-store-server.js       # FAISS vector store MCP
 │   └── settings-tools-server.js     # Settings extraction tools MCP
+│
+├── scripts/                         # Maintenance scripts [NEW v3.1.0]
+│   ├── migrate-vectors-to-sqlite.js # FAISS → SQLite migration
+│   └── verify-vector-integrity.js   # Weekly checksum verification
 │
 ├── mcp-config.json                  # MCP server configurations [NEW]
 │
 ├── data/
-│   ├── chat.db                      # SQLite database (auto-created) [NEW]
-│   ├── vector-store/                # FAISS indexes per session [NEW]
-│   │   ├── {session-id}.index       # FAISS index file
-│   │   └── {session-id}.meta.json   # Vector metadata
+│   ├── chat.db                      # SQLite database with vectors as BLOBs [v3.1.0]
 │   └── settings/                    # User settings (individual JSON files)
 │       ├── mode.json                # Current mode (roleplay/normal)
 │       ├── roleplay.json            # Roleplay settings
@@ -230,12 +241,14 @@ Zustand Store (useStore.js - Extended)
 │   ├── ZUSTAND_MIGRATION.md         # State management guide
 │   ├── SETTINGS_PERSISTENCE.md      # Settings storage guide
 │   ├── HOW_SETTINGS_WORK.md         # Settings architecture
+│   ├── SQLITE_VECTOR_MIGRATION.md   # Vector storage migration plan [v3.1.0]
 │   ├── IMPLEMENTATION_PLAN.md       # Original plan
 │   ├── IMPLEMENTATION_SUMMARY.md    # Summary
 │   ├── QUICK_START.md               # Quick start guide
 │   └── TEST_SYSTEM_PROMPT.md        # Testing guide
 │
 ├── MEMORY_SYSTEM_GUIDE.md           # Memory system testing guide [NEW]
+├── FAISS_REMOVAL_NOTES.md          # SQLite migration guide [NEW v3.1.0]
 │
 └── client/                          # Frontend (Vite project)
     ├── package.json                 # Frontend deps (react, zustand, sass)
@@ -829,8 +842,8 @@ See [docs/ZUSTAND_MIGRATION.md](docs/ZUSTAND_MIGRATION.md) for complete migratio
 
 The memory system provides four key features:
 1. **Session Management** - Create, switch, and manage multiple conversation sessions
-2. **Message Persistence** - All messages stored in SQLite via MCP
-3. **RAG (Retrieval Augmented Generation)** - Semantic search using FAISS and embeddings
+2. **Message Persistence** - All messages stored in SQLite
+3. **RAG (Retrieval Augmented Generation)** - Semantic search using SQLite BLOB vectors (v3.1.0)
 4. **Auto-Extraction** - AI-powered character detail extraction with user approval
 
 ### Architecture Components
@@ -838,8 +851,12 @@ The memory system provides four key features:
 **MCP Servers** (Model Context Protocol):
 - **SQLite MCP** - Session and message storage (`@modelcontextprotocol/server-sqlite`)
 - **Filesystem MCP** - Settings file access (`@modelcontextprotocol/server-filesystem`)
-- **Vector Store MCP** - FAISS vector search (custom implementation)
 - **Settings Tools MCP** - Character extraction tools (custom implementation)
+
+**Vector Storage** (v3.1.0 - No MCP):
+- **SQLite BLOB Storage** - Vectors stored directly in message_vectors table
+- **In-Memory Search** - Pure JavaScript cosine similarity
+- **WAL Mode** - Concurrent access without file locking
 
 **LangChain Services**:
 - **langchainRAG.js** - RAG orchestration with Ollama embeddings (nomic-embed-text)
@@ -862,8 +879,8 @@ Check if session > 50 messages
 Stream response to frontend
   ↓
 Background tasks:
-  ├── Save messages to SQLite (via MCP)
-  ├── Create embeddings → FAISS index
+  ├── Save messages to SQLite
+  ├── Create embeddings → Store as BLOBs in message_vectors table
   └── Every 5 messages: Run extraction agent
       └── Analyze for new character details
           └── Store suggestions in database
@@ -885,19 +902,21 @@ system_prompt_hash, token_count, embedded, embedding_id,
 extracted_data, extraction_status
 ```
 
-**embeddings table**:
+**message_vectors table** (v3.1.0):
 ```sql
-id, session_id, message_id, text_hash, text_preview,
-model, vector_file, created_at, metadata
+id, message_id, session_id, vector (BLOB), dimension,
+model, model_version, checksum, created_at
 ```
 
-### Vector Store
+### Vector Storage (v3.1.0)
 
-- **Location**: `/data/vector-store/`
-- **Format**: FAISS IndexFlatL2 (768 dimensions)
-- **Per Session**: `{session-id}.index` + `{session-id}.meta.json`
+- **Location**: SQLite database (`chat.db`)
+- **Format**: Float32Array stored as BLOB (768 dimensions × 4 bytes = 3KB each)
+- **Search Method**: In-memory cosine similarity (pure JavaScript)
+- **Optimization**: Sliding window (loads last 100 vectors per search)
 - **Embeddings Model**: Ollama nomic-embed-text
-- **Search**: Cosine similarity via FAISS
+- **Security**: Checksums for integrity verification
+- **Concurrency**: WAL mode enables concurrent reads during writes
 
 ### API Endpoints
 
@@ -2075,11 +2094,12 @@ Debounced save to backend (1s delay)
     "@modelcontextprotocol/sdk": "^0.5.0",           // MCP SDK [NEW]
     "sqlite": "^5.1.1",                              // SQLite driver [NEW]
     "sqlite3": "^5.1.7",                             // SQLite3 library [NEW]
-    "uuid": "^11.0.3",                               // UUID generation [NEW]
-    "faiss-node": "^0.5.1"                           // FAISS vector search [NEW]
+    "uuid": "^11.0.3"                                // UUID generation [NEW]
   }
 }
 ```
+
+**Note**: `faiss-node` was removed in v3.1.0 - vectors now stored in SQLite BLOBs
 
 **MCP Servers** (installed globally or via npx):
 ```bash
@@ -2088,6 +2108,7 @@ Debounced save to backend (1s delay)
 
 # Filesystem MCP Server
 @modelcontextprotocol/server-filesystem
+```
 ```
 
 ### Frontend (client/package.json)
@@ -2121,10 +2142,15 @@ Debounced save to backend (1s delay)
 - **[docs/ZUSTAND_MIGRATION.md](docs/ZUSTAND_MIGRATION.md)** - State management migration guide
 - **[docs/SETTINGS_PERSISTENCE.md](docs/SETTINGS_PERSISTENCE.md)** - Settings storage architecture
 - **[docs/HOW_SETTINGS_WORK.md](docs/HOW_SETTINGS_WORK.md)** - Settings system deep dive
+- **[docs/SQLITE_VECTOR_MIGRATION.md](docs/SQLITE_VECTOR_MIGRATION.md)** - SQLite vector storage migration (v3.1.0)
 - **[docs/IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)** - Original implementation plan
 - **[docs/IMPLEMENTATION_SUMMARY.md](docs/IMPLEMENTATION_SUMMARY.md)** - Feature summary
 - **[docs/QUICK_START.md](docs/QUICK_START.md)** - Quick start guide
 - **[docs/TEST_SYSTEM_PROMPT.md](docs/TEST_SYSTEM_PROMPT.md)** - System prompt testing guide
+
+**Root Level Guides**:
+- **[MEMORY_SYSTEM_GUIDE.md](MEMORY_SYSTEM_GUIDE.md)** - Memory system testing guide
+- **[FAISS_REMOVAL_NOTES.md](FAISS_REMOVAL_NOTES.md)** - SQLite migration user guide (v3.1.0)
 
 ## Key Files to Understand
 
@@ -2211,23 +2237,26 @@ curl http://localhost:11434/api/tags  # Test Ollama API
 
 ### Common Gotchas
 
-1. **Zustand State Access**: Always use selectors `useStore((state) => state.property)`, not `useStore().property`
-2. **Settings Auto-Save**: Changes auto-save with 1s debounce - check console for save confirmations
-3. **System Prompts**: Generated from settings using variable mapping - check `promptBuilder.js`
-4. **onChange in TextField**: Receives VALUE, not event object
-5. **SSE parsing**: Remember to check `line.startsWith('data: ')`
-6. **Message state updates**: Update last item in array for streaming
-7. **CSS/SCSS**: Using SCSS modules + global.scss, not plain CSS
-8. **Settings Persistence**: Individual JSON files in `/data/settings/`, not single file
-9. **Vite proxy**: Only works in dev mode, not production build
-10. **Model names**: Support both Ollama format and HuggingFace `hf.co/...` format
-11. **Mode Toggle**: `/chat` and `/play` commands set `activeMode`, which overrides `settings.mode`
-12. **Template Application**: Completely replaces settings except general.selectedModel
+1. **Vector Storage (v3.1.0)**: Vectors stored in SQLite BLOBs, NOT FAISS files - no `/data/vector-store/` directory
+2. **Zustand State Access**: Always use selectors `useStore((state) => state.property)`, not `useStore().property`
+3. **Settings Auto-Save**: Changes auto-save with 1s debounce - check console for save confirmations
+4. **System Prompts**: Generated from settings using variable mapping - check `promptBuilder.js`
+5. **onChange in TextField**: Receives VALUE, not event object
+6. **SSE parsing**: Remember to check `line.startsWith('data: ')`
+7. **Message state updates**: Update last item in array for streaming
+8. **CSS/SCSS**: Using SCSS modules + global.scss, not plain CSS
+9. **Settings Persistence**: Individual JSON files in `/data/settings/`, not single file
+10. **Vite proxy**: Only works in dev mode, not production build
+11. **Model names**: Support both Ollama format and HuggingFace `hf.co/...` format
+12. **Mode Toggle**: `/chat` and `/play` commands set `activeMode`, which overrides `settings.mode`
+13. **Template Application**: Completely replaces settings except general.selectedModel
+14. **WAL Mode**: SQLite uses WAL mode for concurrent access - no file locking issues
+15. **Buffer Alignment**: Vector BLOB conversion uses `blob.byteOffset` for memory safety
 
 ---
 
-**Last Updated**: 2026-03-11
-**Project Version**: 3.0.0 (Memory System with LangChain + MCP)
+**Last Updated**: 2026-03-12
+**Project Version**: 3.1.0 (SQLite Vector Storage Migration)
 **Node Version**: 18+
 **React Version**: 19.2.0
 **Zustand Version**: 5.0.2
@@ -2236,27 +2265,54 @@ curl http://localhost:11434/api/tags  # Test Ollama API
 
 ## Recent Major Updates
 
+### v3.1.0 (2026-03-12) - SQLite Vector Storage Migration
+- ✅ **FAISS Removal** - Eliminated file-based vector storage entirely
+- ✅ **SQLite BLOB Vectors** - Vectors stored directly in message_vectors table
+- ✅ **WAL Mode** - Enabled Write-Ahead Logging for concurrent access safety
+- ✅ **In-Memory Search** - Pure JavaScript cosine similarity (no FAISS dependency)
+- ✅ **Sliding Window** - Last 100 vectors loaded for searches (prevents memory issues)
+- ✅ **Model Versioning** - Track embedding model changes to prevent drift
+- ✅ **4-Byte Alignment** - Proper Buffer.byteOffset usage for Float32Array safety
+- ✅ **Checksum Verification** - SHA-256 checksums for vector integrity
+- ✅ **Session Security** - AES-256-CBC encryption with machine-specific keys (~/.oread-chat-key)
+- ✅ **No File Locking** - Single SQLite file, atomic transactions
+- ✅ **Migration Scripts** - Tools for FAISS → SQLite migration + weekly integrity checks
+- 📄 **Documentation** - FAISS_REMOVAL_NOTES.md, docs/SQLITE_VECTOR_MIGRATION.md
+
+**Key Files**:
+- Backend: `services/vectorSearch.js` (NEW), `services/sessionSecurity.js` (NEW)
+- Modified: `services/database.js` (WAL mode), `services/langchainRAG.js` (SQLite vectors)
+- Scripts: `scripts/migrate-vectors-to-sqlite.js`, `scripts/verify-vector-integrity.js`
+- Database: `message_vectors` table with BLOB storage
+
+**Why This Change**:
+- Eliminates file locking issues completely
+- Atomic transactions across vectors + messages
+- Simpler architecture (one storage system)
+- No C++ build tools needed (removed faiss-node)
+- WAL mode allows concurrent reads during writes
+
 ### v3.0.0 (2026-03-11) - Memory System with LangChain + MCP
 - ✅ **LangChain Integration** - RAG orchestration with Ollama embeddings
 - ✅ **MCP Architecture** - Model Context Protocol for standardized data access
 - ✅ **Session Management** - Create, switch, and manage conversation sessions
-- ✅ **Message Persistence** - All messages stored in SQLite via MCP
-- ✅ **Vector Memory (RAG)** - FAISS-based semantic search with nomic-embed-text
+- ✅ **Message Persistence** - All messages stored in SQLite
+- ✅ **Vector Memory (RAG)** - Semantic search with embeddings
 - ✅ **Smart Context** - Automatically switches to RAG after 50 messages
 - ✅ **Auto-Extraction** - AI-powered character detail extraction
 - ✅ **Infinite Scroll History** - Load entire conversation history with pagination
 - ✅ **Session UI** - SessionManager component with create/delete/select
 - ✅ **Update Suggestions** - Modal for reviewing and applying extracted character details
 - ✅ **Background Embeddings** - Automatic vector generation for all messages
-- ✅ **Custom MCP Servers** - Vector store and settings tools implementations
+- ✅ **Custom MCP Servers** - Settings tools implementation
 - ✅ **19 New Files** - 13 backend services/routes, 6 frontend components
 - ✅ **Documentation** - MEMORY_SYSTEM_GUIDE.md with complete testing instructions
 
 **Key Files**:
 - Backend: `services/langchainRAG.js`, `services/extractionAgent.js`, `services/mcpClient.js`
-- MCP Servers: `mcp-servers/vector-store-server.js`, `mcp-servers/settings-tools-server.js`
+- MCP Servers: `mcp-servers/settings-tools-server.js`
 - Frontend: `SessionManager.jsx`, `MessageHistoryViewer.jsx`, `AutoUpdateSuggestions.jsx`
-- Database: SQLite schema with sessions, messages, and embeddings tables
+- Database: SQLite schema with sessions, messages, and message_vectors tables
 
 ### v2.1.0 (2026-03-11) - Oread Design System
 - ✅ **Dark Theme** - Complete redesign with dark color palette (#1a1a1a backgrounds)

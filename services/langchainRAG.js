@@ -1,6 +1,8 @@
-import { ChatOllama } from '@langchain/ollama';
-import { OllamaEmbeddings } from '@langchain/community/embeddings/ollama';
+import { ChatOllama, OllamaEmbeddings } from '@langchain/ollama';
 import mcpClient from './mcpClient.js';
+import vectorSearch from './vectorSearch.js';
+import database from './database.js';
+import crypto from 'crypto';
 
 class LangChainRAGService {
   constructor() {
@@ -38,15 +40,34 @@ class LangChainRAGService {
       // 2. Create embedding for user query
       const queryVector = await this.embeddings.embedQuery(userMessage);
 
-      // 3. Semantic search for relevant context
+      // 3. Semantic search for relevant context using SQLite vectors
       let vectorResults = [];
       try {
-        const searchResult = await mcpClient.searchVectors(sessionId, queryVector, 5);
-        if (searchResult.success) {
-          vectorResults = searchResult.results || [];
+        const searchResults = await vectorSearch.search(
+          sessionId,
+          queryVector,
+          5,
+          true,
+          'nomic-embed-text'
+        );
+
+        // Load message content for each result
+        for (const result of searchResults) {
+          const message = await database.get(
+            'SELECT content, role, timestamp FROM messages WHERE id = ?',
+            [result.messageId]
+          );
+          if (message) {
+            vectorResults.push({
+              text: message.content,
+              role: message.role,
+              timestamp: message.timestamp,
+              score: result.score
+            });
+          }
         }
       } catch (error) {
-        console.warn('Vector search failed (index may not exist yet):', error.message);
+        console.warn('Vector search failed (vectors may not exist yet):', error.message);
       }
 
       // 4. Build hybrid context
@@ -98,6 +119,7 @@ class LangChainRAGService {
 
   /**
    * Add documents to vector store (background embeddings)
+   * Now stores vectors directly in SQLite instead of FAISS
    */
   async addDocuments(sessionId, messages) {
     try {
@@ -114,28 +136,38 @@ class LangChainRAGService {
       const texts = documentsToEmbed.map(msg => msg.content);
       const vectors = await this.embeddings.embedDocuments(texts);
 
-      // Prepare documents with metadata
-      const documents = documentsToEmbed.map((msg, idx) => ({
-        id: msg.id || `msg_${Date.now()}_${idx}`,
-        text: msg.content,
-        metadata: {
-          messageId: msg.id,
-          role: msg.role,
-          timestamp: msg.timestamp || new Date().toISOString()
-        }
-      }));
+      // Store vectors directly in SQLite
+      for (let i = 0; i < documentsToEmbed.length; i++) {
+        const msg = documentsToEmbed[i];
+        const vector = vectors[i];
 
-      // Add to vector store via MCP
-      await mcpClient.addVectors(sessionId, documents, vectors);
+        // Calculate checksum
+        const checksum = vectorSearch.calculateChecksum(vector);
 
-      // Mark messages as embedded in database
-      for (const msg of documentsToEmbed) {
-        if (msg.id) {
-          await mcpClient.executeSQLite(
-            'UPDATE messages SET embedded = 1 WHERE id = ?',
-            [msg.id]
-          );
-        }
+        // Insert into message_vectors table
+        await database.run(`
+          INSERT INTO message_vectors (
+            id, message_id, session_id, vector, dimension,
+            model, model_version, checksum
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT (id) DO NOTHING
+        `, [
+          crypto.randomUUID(),
+          msg.id,
+          sessionId,
+          vectorSearch.float32ArrayToBlob(vector),
+          vector.length,
+          'nomic-embed-text',
+          '1.0',
+          checksum
+        ]);
+
+        // Mark message as embedded
+        await database.run(
+          'UPDATE messages SET embedded = 1 WHERE id = ?',
+          [msg.id]
+        );
       }
 
       return {
@@ -150,10 +182,20 @@ class LangChainRAGService {
 
   /**
    * Get index statistics for a session
+   * Now queries SQLite instead of FAISS
    */
   async getIndexStats(sessionId) {
     try {
-      return await mcpClient.getIndexStats(sessionId);
+      const result = await database.get(
+        'SELECT COUNT(*) as count FROM message_vectors WHERE session_id = ?',
+        [sessionId]
+      );
+
+      return {
+        success: true,
+        session_id: sessionId,
+        document_count: result?.count || 0
+      };
     } catch (error) {
       console.error('Get index stats error:', error);
       return {
