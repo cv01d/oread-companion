@@ -1,243 +1,265 @@
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import mcpClient from '../services/mcpClient.js';
+import { validate, validateUUID, sessionCreateSchema, sessionUpdateSchema } from '../middleware/validation.js';
+import { asyncHandler } from '../middleware/errorHandler.js';
 
 const router = express.Router();
 
 // Create new session
-router.post('/', async (req, res) => {
-  try {
-    const { name, settings } = req.body;
-    const sessionId = uuidv4();
+router.post('/', validate(sessionCreateSchema), asyncHandler(async (req, res) => {
+  const { name, character_name, character_mode, mode, settings_snapshot } = req.body;
+  const sessionId = uuidv4();
 
-    const mode = settings.mode || 'normal';
-    const characterName = mode === 'roleplay'
-      ? settings.roleplay?.singleCharacter?.identity?.name
-      : null;
-    const characterMode = mode === 'roleplay'
-      ? settings.roleplay?.characterMode
-      : 'utility';
+  // Insert session via MCP with validated data
+  await mcpClient.executeSQLite(
+    `INSERT INTO sessions (id, name, character_name, character_mode, mode, settings_snapshot)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [
+      sessionId,
+      name,
+      character_name || null,
+      character_mode || 'single',
+      mode,
+      settings_snapshot ? JSON.stringify(settings_snapshot) : null
+    ]
+  );
 
-    // Insert session via MCP
-    await mcpClient.executeSQLite(
-      `INSERT INTO sessions (id, name, character_name, character_mode, mode, settings_snapshot)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [
-        sessionId,
-        name || `${characterName || 'Utility'} Session`,
-        characterName,
-        characterMode,
-        mode,
-        JSON.stringify(settings)
-      ]
-    );
+  // Get the created session
+  const sessions = await mcpClient.querySQLite(
+    'SELECT * FROM sessions WHERE id = ?',
+    [sessionId]
+  );
 
-    // Get the created session
-    const sessions = await mcpClient.querySQLite(
-      'SELECT * FROM sessions WHERE id = ?',
-      [sessionId]
-    );
-
-    res.json({
-      success: true,
-      session: sessions[0]
-    });
-  } catch (error) {
-    console.error('Create session error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
+  res.json({
+    success: true,
+    session: sessions[0]
+  });
+}));
 
 // List sessions
-router.get('/', async (req, res) => {
-  try {
-    const { archived = 'false', limit = '50', offset = '0' } = req.query;
+router.get('/', asyncHandler(async (req, res) => {
+  const { archived = 'false', limit = '50', offset = '0' } = req.query;
 
-    const sessions = await mcpClient.querySQLite(
-      `SELECT * FROM sessions
-       WHERE archived = ?
-       ORDER BY updated_at DESC
-       LIMIT ? OFFSET ?`,
-      [archived === 'true' ? 1 : 0, parseInt(limit), parseInt(offset)]
-    );
+  // Validate and sanitize query parameters
+  const parsedLimit = Math.min(parseInt(limit) || 50, 100); // Max 100
+  const parsedOffset = Math.max(parseInt(offset) || 0, 0);
+  const isArchived = archived === 'true' ? 1 : 0;
 
-    const countResult = await mcpClient.querySQLite(
-      'SELECT COUNT(*) as count FROM sessions WHERE archived = ?',
-      [archived === 'true' ? 1 : 0]
-    );
+  const sessions = await mcpClient.querySQLite(
+    `SELECT * FROM sessions
+     WHERE archived = ?
+     ORDER BY updated_at DESC
+     LIMIT ? OFFSET ?`,
+    [isArchived, parsedLimit, parsedOffset]
+  );
 
-    const total = countResult[0]?.count || 0;
+  const countResult = await mcpClient.querySQLite(
+    'SELECT COUNT(*) as count FROM sessions WHERE archived = ?',
+    [isArchived]
+  );
 
-    res.json({
-      success: true,
-      sessions,
-      total,
-      has_more: parseInt(offset) + sessions.length < total
-    });
-  } catch (error) {
-    console.error('List sessions error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
+  const total = countResult[0]?.count || 0;
+
+  res.json({
+    success: true,
+    sessions,
+    total,
+    has_more: parsedOffset + sessions.length < total
+  });
+}));
 
 // Get session by ID
-router.get('/:id', async (req, res) => {
-  try {
-    const sessions = await mcpClient.querySQLite(
-      'SELECT * FROM sessions WHERE id = ?',
-      [req.params.id]
-    );
+router.get('/:id', validateUUID('id'), asyncHandler(async (req, res) => {
+  const sessions = await mcpClient.querySQLite(
+    'SELECT * FROM sessions WHERE id = ?',
+    [req.params.id]
+  );
 
-    if (sessions.length === 0) {
-      return res.status(404).json({ error: 'Session not found' });
-    }
+  if (sessions.length === 0) {
+    return res.status(404).json({
+      success: false,
+      error: 'Session not found'
+    });
+  }
 
-    const session = sessions[0];
-    if (session.settings_snapshot) {
+  const session = sessions[0];
+  if (session.settings_snapshot) {
+    try {
       session.settings_snapshot = JSON.parse(session.settings_snapshot);
+    } catch (error) {
+      console.error('Failed to parse settings snapshot:', error);
+      session.settings_snapshot = null;
     }
-
-    res.json({
-      success: true,
-      session
-    });
-  } catch (error) {
-    console.error('Get session error:', error);
-    res.status(500).json({ error: error.message });
   }
-});
 
-// Update session
-router.put('/:id', async (req, res) => {
-  try {
-    const { name, archived } = req.body;
-    const updates = [];
-    const params = [];
+  res.json({
+    success: true,
+    session
+  });
+}));
 
-    if (name !== undefined) {
-      updates.push('name = ?');
-      params.push(name);
-    }
+// Update session - FIXED SQL INJECTION VULNERABILITY
+router.put('/:id', validateUUID('id'), validate(sessionUpdateSchema), asyncHandler(async (req, res) => {
+  const { name, archived } = req.body;
 
-    if (archived !== undefined) {
-      updates.push('archived = ?');
-      params.push(archived ? 1 : 0);
-    }
+  // SECURITY FIX: Whitelist allowed fields to prevent SQL injection
+  const ALLOWED_FIELDS = {
+    name: 'name = ?',
+    archived: 'archived = ?'
+  };
 
-    updates.push('updated_at = CURRENT_TIMESTAMP');
-    params.push(req.params.id);
+  const updates = [];
+  const params = [];
 
-    await mcpClient.executeSQLite(
-      `UPDATE sessions SET ${updates.join(', ')} WHERE id = ?`,
-      params
-    );
-
-    const sessions = await mcpClient.querySQLite(
-      'SELECT * FROM sessions WHERE id = ?',
-      [req.params.id]
-    );
-
-    res.json({
-      success: true,
-      session: sessions[0]
-    });
-  } catch (error) {
-    console.error('Update session error:', error);
-    res.status(500).json({ error: error.message });
+  // Only process whitelisted fields
+  if (name !== undefined && ALLOWED_FIELDS.name) {
+    updates.push(ALLOWED_FIELDS.name);
+    params.push(name);
   }
-});
+
+  if (archived !== undefined && ALLOWED_FIELDS.archived) {
+    updates.push(ALLOWED_FIELDS.archived);
+    params.push(archived ? 1 : 0);
+  }
+
+  if (updates.length === 0) {
+    return res.status(400).json({
+      success: false,
+      error: 'No valid fields to update'
+    });
+  }
+
+  // Always update timestamp
+  updates.push('updated_at = CURRENT_TIMESTAMP');
+  params.push(req.params.id);
+
+  await mcpClient.executeSQLite(
+    `UPDATE sessions SET ${updates.join(', ')} WHERE id = ?`,
+    params
+  );
+
+  const sessions = await mcpClient.querySQLite(
+    'SELECT * FROM sessions WHERE id = ?',
+    [req.params.id]
+  );
+
+  if (sessions.length === 0) {
+    return res.status(404).json({
+      success: false,
+      error: 'Session not found'
+    });
+  }
+
+  res.json({
+    success: true,
+    session: sessions[0]
+  });
+}));
 
 // Delete session
-router.delete('/:id', async (req, res) => {
-  try {
-    await mcpClient.executeSQLite(
-      'DELETE FROM sessions WHERE id = ?',
-      [req.params.id]
-    );
+router.delete('/:id', validateUUID('id'), asyncHandler(async (req, res) => {
+  await mcpClient.executeSQLite(
+    'DELETE FROM sessions WHERE id = ?',
+    [req.params.id]
+  );
 
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Delete session error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
+  res.json({ success: true });
+}));
 
 // Save message to session
-router.post('/:id/messages', async (req, res) => {
-  try {
-    const { role, content, model, system_prompt_hash, timestamp } = req.body;
-    const messageId = uuidv4();
+router.post('/:id/messages', validateUUID('id'), asyncHandler(async (req, res) => {
+  const { role, content, model, system_prompt_hash, timestamp } = req.body;
 
-    await mcpClient.executeSQLite(
-      `INSERT INTO messages (id, session_id, role, content, model, system_prompt_hash, timestamp)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [
-        messageId,
-        req.params.id,
-        role,
-        content,
-        model || null,
-        system_prompt_hash || null,
-        timestamp || new Date().toISOString()
-      ]
-    );
-
-    // Update session stats
-    await mcpClient.executeSQLite(
-      `UPDATE sessions
-       SET message_count = message_count + 1,
-           last_message_at = CURRENT_TIMESTAMP,
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = ?`,
-      [req.params.id]
-    );
-
-    res.json({
-      success: true,
-      message: {
-        id: messageId,
-        session_id: req.params.id,
-        role,
-        content,
-        timestamp: timestamp || new Date().toISOString()
-      }
+  // Validate message fields
+  if (!role || !['user', 'assistant', 'system'].includes(role)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid role. Must be user, assistant, or system'
     });
-  } catch (error) {
-    console.error('Save message error:', error);
-    res.status(500).json({ error: error.message });
   }
-});
+
+  if (!content || typeof content !== 'string') {
+    return res.status(400).json({
+      success: false,
+      error: 'Content is required and must be a string'
+    });
+  }
+
+  if (content.length > 100000) {
+    return res.status(400).json({
+      success: false,
+      error: 'Content too long (max: 100KB)'
+    });
+  }
+
+  const messageId = uuidv4();
+
+  await mcpClient.executeSQLite(
+    `INSERT INTO messages (id, session_id, role, content, model, system_prompt_hash, timestamp)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [
+      messageId,
+      req.params.id,
+      role,
+      content,
+      model || null,
+      system_prompt_hash || null,
+      timestamp || new Date().toISOString()
+    ]
+  );
+
+  // Update session stats
+  await mcpClient.executeSQLite(
+    `UPDATE sessions
+     SET message_count = message_count + 1,
+         last_message_at = CURRENT_TIMESTAMP,
+         updated_at = CURRENT_TIMESTAMP
+     WHERE id = ?`,
+    [req.params.id]
+  );
+
+  res.json({
+    success: true,
+    message: {
+      id: messageId,
+      session_id: req.params.id,
+      role,
+      content,
+      timestamp: timestamp || new Date().toISOString()
+    }
+  });
+}));
 
 // Get messages for session
-router.get('/:id/messages', async (req, res) => {
-  try {
-    const { limit = '50', offset = '0' } = req.query;
+router.get('/:id/messages', validateUUID('id'), asyncHandler(async (req, res) => {
+  const { limit = '50', offset = '0' } = req.query;
 
-    const messages = await mcpClient.querySQLite(
-      `SELECT * FROM messages
-       WHERE session_id = ?
-       ORDER BY timestamp ASC
-       LIMIT ? OFFSET ?`,
-      [req.params.id, parseInt(limit), parseInt(offset)]
-    );
+  // Validate and sanitize query parameters
+  const parsedLimit = Math.min(parseInt(limit) || 50, 100); // Max 100
+  const parsedOffset = Math.max(parseInt(offset) || 0, 0);
 
-    const countResult = await mcpClient.querySQLite(
-      'SELECT COUNT(*) as count FROM messages WHERE session_id = ?',
-      [req.params.id]
-    );
+  const messages = await mcpClient.querySQLite(
+    `SELECT * FROM messages
+     WHERE session_id = ?
+     ORDER BY timestamp ASC
+     LIMIT ? OFFSET ?`,
+    [req.params.id, parsedLimit, parsedOffset]
+  );
 
-    const total = countResult[0]?.count || 0;
+  const countResult = await mcpClient.querySQLite(
+    'SELECT COUNT(*) as count FROM messages WHERE session_id = ?',
+    [req.params.id]
+  );
 
-    res.json({
-      success: true,
-      messages,
-      total,
-      has_more: parseInt(offset) + messages.length < total
-    });
-  } catch (error) {
-    console.error('Get messages error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
+  const total = countResult[0]?.count || 0;
+
+  res.json({
+    success: true,
+    messages,
+    total,
+    has_more: parsedOffset + messages.length < total
+  });
+}));
 
 export default router;

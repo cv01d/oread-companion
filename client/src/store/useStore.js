@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { DEFAULT_SETTINGS } from '../data/defaultSettings';
-import { TEMPLATES } from '../data/templates';
+import { loadTemplates } from '../data/templates';
 import { buildSystemPrompt, detectModeToggle } from '../utils/promptBuilder';
 import { saveSettings as saveSettingsAPI, loadSettings as loadSettingsAPI } from '../utils/settingsAPI';
 
@@ -684,6 +684,11 @@ const useStore = create((set, get) => ({
   },
 
   // ==========================================
+  // TEMPLATES STATE
+  // ==========================================
+  templates: [],
+
+  // ==========================================
   // UI STATE
   // ==========================================
   currentPage: 'chat',
@@ -697,22 +702,30 @@ const useStore = create((set, get) => ({
     const store = get();
     await store.loadSettings();
 
-    // Auto-apply default assistant template if no template is set
-    // (First-time user experience)
-    if (!store.settings.meta.templateId && store.settings.mode === 'normal') {
-      console.log('🎯 No template set - auto-applying default assistant template');
-      const assistantTemplate = TEMPLATES.find(t => t.id === 'expert-tutor');
-      if (assistantTemplate) {
-        // Don't copy character since utility mode doesn't use character files
-        store.setSettings({
-          ...assistantTemplate.settings,
-          meta: {
-            ...assistantTemplate.settings.meta,
-            templateId: assistantTemplate.id,
-            lastModified: new Date().toISOString()
-          }
-        });
+    // Load templates from backend
+    try {
+      const templates = await loadTemplates();
+      set({ templates });
+      console.log(`✅ Loaded ${templates.length} templates from backend`);
+
+      // Auto-apply default assistant template if no template is set
+      // (First-time user experience)
+      if (!get().settings.meta.templateId && get().settings.mode === 'normal') {
+        console.log('🎯 No template set - auto-applying default assistant template');
+        const assistantTemplate = templates.find(t => t.id === 'expert-tutor');
+        if (assistantTemplate) {
+          store.setSettings({
+            ...assistantTemplate.settings,
+            meta: {
+              ...assistantTemplate.settings.meta,
+              templateId: assistantTemplate.id,
+              lastModified: new Date().toISOString()
+            }
+          });
+        }
       }
+    } catch (error) {
+      console.error('❌ Failed to load templates:', error);
     }
 
     await store.checkHealth();

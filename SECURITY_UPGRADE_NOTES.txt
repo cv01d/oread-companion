@@ -1,0 +1,143 @@
+================================================================================
+OREAD CHAT INTERFACE - SECURITY UPGRADE NOTES
+Version 3.1.0 Security Hardened - 2026-03-13
+================================================================================
+
+CRITICAL: Before starting the server, you must set up environment variables!
+
+QUICK START
+-----------
+
+1. Create .env file:
+   cp .env.example .env
+
+2. Generate secrets:
+   openssl rand -base64 32   # Use this for SESSION_SECRET
+   openssl rand -base64 32   # Use this for OREAD_ENCRYPTION_PASSPHRASE
+
+3. Edit .env and paste the generated secrets
+
+4. Start the server:
+   npm start
+
+5. You should see security confirmation in startup logs:
+   🔒 Security Features:
+      - Rate Limiting: ENABLED
+      - Security Headers: ENABLED
+      - Input Validation: ENABLED
+      - Path Traversal Protection: ENABLED
+      - SQL Injection Protection: ENABLED
+
+WHAT CHANGED
+------------
+
+✅ All critical security vulnerabilities fixed:
+   - SQL injection prevention
+   - Path traversal protection
+   - Input validation on all endpoints
+   - Rate limiting (prevents DoS)
+   - Security headers (Helmet)
+   - File upload validation (no XSS via SVG)
+   - Error message sanitization
+
+✅ New dependencies installed:
+   - helmet (security headers)
+   - express-rate-limit (rate limiting)
+   - express-session (session management)
+   - joi (input validation)
+   - dotenv (environment config)
+   - bcrypt (password hashing, future use)
+   - cookie-parser (session cookies)
+
+✅ New files created:
+   - config/index.js (configuration system)
+   - middleware/auth.js (authentication framework)
+   - middleware/validation.js (input validation schemas)
+   - middleware/errorHandler.js (error handling)
+   - middleware/security.js (security middleware)
+   - .env.example (environment template)
+   - SECURITY.md (security policy)
+   - SECURITY_FIXES_SUMMARY.md (detailed fixes)
+
+✅ Files modified:
+   - server.js (complete security rewrite)
+   - routes/sessions.js (SQL injection fixes)
+   - controllers/characterController.js (path traversal fixes)
+   - controllers/settingsController.js (file upload validation)
+   - package.json (new scripts)
+
+BREAKING CHANGES
+----------------
+
+⚠️ Environment variables now required:
+   - .env file must be created before starting
+   - SESSION_SECRET and OREAD_ENCRYPTION_PASSPHRASE required in production
+
+⚠️ Rate limiting enabled:
+   - Max 100 requests per 15 minutes (general)
+   - Max 10 chat requests per minute
+   - Adjust in .env if needed (see RATE_LIMIT_* variables)
+
+⚠️ CORS now restricted:
+   - Only allowed origins can connect
+   - Default: http://localhost:5173
+   - Add your domain to ALLOWED_ORIGINS in .env
+
+⚠️ Stricter input validation:
+   - Invalid requests return 400 with detailed error
+   - Character IDs must be alphanumeric + hyphens/underscores only
+   - Session IDs must be valid UUIDs
+   - Message content limited to 100KB
+
+TROUBLESHOOTING
+---------------
+
+Error: "SESSION_SECRET environment variable is required in production"
+→ Create .env file and set SESSION_SECRET
+
+Error: "Origin not allowed by CORS"
+→ Add your frontend URL to ALLOWED_ORIGINS in .env
+
+Error: "Too many requests"
+→ Rate limit triggered, wait 1-15 minutes or adjust limits in .env
+
+Error: "Invalid character ID"
+→ Character IDs can only contain alphanumeric, hyphens, underscores
+
+SECURITY RECOMMENDATIONS
+------------------------
+
+For local/development use:
+✓ You're good to go! Default settings are secure for local use.
+
+For production deployment:
+1. Set NODE_ENV=production in .env
+2. Use strong, random secrets (openssl rand -base64 32)
+3. Set up HTTPS reverse proxy (nginx/Caddy)
+4. Configure ALLOWED_ORIGINS with your domain
+5. Consider enabling ENABLE_AUTH=true
+6. Review SECURITY.md for full checklist
+
+DOCUMENTATION
+-------------
+
+📄 SECURITY.md - Complete security policy and best practices
+📄 SECURITY_FIXES_SUMMARY.md - Detailed list of all fixes
+📄 CLAUDE.md - Technical documentation (updated)
+📄 README.md - User-facing documentation
+
+RUN SECURITY CHECKS
+-------------------
+
+npm run security:audit         # Check for vulnerabilities
+npm run security:audit:fix     # Fix non-breaking vulnerabilities
+npm run security:check         # Check for outdated packages
+npm run security:update        # Update packages
+
+SUPPORT
+-------
+
+Questions? Check SECURITY.md or CLAUDE.md
+Security issue? See SECURITY.md for reporting policy
+
+================================================================================

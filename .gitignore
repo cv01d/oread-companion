@@ -3,10 +3,13 @@ node_modules/
 client/node_modules/
 
 # User data (exclude user customizations, keep defaults)
-# Keep: /data/characters/defaults/, /data/personality-system/, /data/avatars/, /data/settings/defaults/
-# Exclude: user settings, user characters, database, vector store
+# Keep: /data/characters/defaults/, /data/personality-system/, /data/avatars/, /data/templates/defaults/
+# Exclude: active template, user characters, database, vector store
 
-# Exclude user settings (but keep defaults folder)
+# Exclude active settings template (user data, but keep defaults/ folder)
+/data/templates/active.json
+
+# Exclude legacy settings files (replaced by data/templates/active.json)
 /data/settings/*.json
 
 # Exclude user characters (but keep defaults folder)

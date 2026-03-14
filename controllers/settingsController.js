@@ -1,35 +1,23 @@
-import fs from 'fs';
+import fs from 'fs/promises';
+import { existsSync, mkdirSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const SETTINGS_DIR = path.join(__dirname, '..', 'data', 'settings');
-const DEFAULTS_DIR = path.join(SETTINGS_DIR, 'defaults');
+const TEMPLATES_DIR = path.join(__dirname, '..', 'data', 'templates');
+const ACTIVE_FILE = path.join(TEMPLATES_DIR, 'active.json');
 
-// Individual JSON files for each settings category
-const SETTINGS_FILES = {
-  mode: path.join(SETTINGS_DIR, 'mode.json'),
-  roleplay: path.join(SETTINGS_DIR, 'roleplay.json'),
-  utility: path.join(SETTINGS_DIR, 'utility.json'),
-  userPersona: path.join(SETTINGS_DIR, 'userPersona.json'),
-  general: path.join(SETTINGS_DIR, 'general.json'),
-  meta: path.join(SETTINGS_DIR, 'meta.json')
-};
+// Ensure templates directory exists
+function ensureTemplatesDir() {
+  if (!existsSync(TEMPLATES_DIR)) {
+    mkdirSync(TEMPLATES_DIR, { recursive: true });
+  }
+}
 
-// Default template files
-const DEFAULT_FILES = {
-  mode: path.join(DEFAULTS_DIR, 'mode.json'),
-  roleplay: path.join(DEFAULTS_DIR, 'roleplay.json'),
-  utility: path.join(DEFAULTS_DIR, 'utility.json'),
-  userPersona: path.join(DEFAULTS_DIR, 'userPersona.json'),
-  general: path.join(DEFAULTS_DIR, 'general.json'),
-  meta: path.join(DEFAULTS_DIR, 'meta.json')
-};
-
-// Default settings structure
-const DEFAULT_SETTINGS = {
+// Blank settings used as fallback when no active template exists
+const BLANK_SETTINGS = {
   mode: 'normal',
   roleplay: {
     world: {
@@ -41,39 +29,20 @@ const DEFAULT_SETTINGS = {
       turnLogic: 'Stop after describing the scene/NPC reaction'
     },
     characterMode: 'single',
-    singleCharacter: {
-      identity: { name: '', age: '', gender: '', species: '', profession: '' },
-      core: { personality: '', backstory: '', knowledge: '' },
-      dynamics: { relationshipToUser: '', currentLocation: '' },
-      vocalProfile: '',
-      avatarImage: ''
-    },
-    multipleCharacters: []
+    singleCharacterRef: '',
+    multipleCharacterRefs: []
   },
   utility: {
-    assistantIdentity: {
-      persona: '',
-      communicationStyle: ''
-    },
-    guardrails: {
-      negativeConstraints: '',
-      formattingPreferences: ''
-    }
+    assistantIdentity: { persona: '', communicationStyle: '' },
+    guardrails: { negativeConstraints: '', formattingPreferences: '' }
   },
   userPersona: {
     name: '',
     bio: '',
     skills: '',
     profession: '',
-    tastes: {
-      interests: '',
-      hobbies: '',
-      mediaPreferences: ''
-    },
-    linguisticFilters: {
-      bannedPhrases: [],
-      bannedWords: []
-    },
+    tastes: { interests: '', hobbies: '', mediaPreferences: '' },
+    linguisticFilters: { bannedPhrases: [], bannedWords: [] },
     boundaries: ''
   },
   general: {
@@ -92,62 +61,65 @@ const DEFAULT_SETTINGS = {
   }
 };
 
-// Ensure settings directory exists
-function ensureSettingsDir() {
-  if (!fs.existsSync(SETTINGS_DIR)) {
-    fs.mkdirSync(SETTINGS_DIR, { recursive: true });
+// Read the active template file and return its settings
+async function readActiveSettings() {
+  try {
+    const data = await fs.readFile(ACTIVE_FILE, 'utf8');
+    const template = JSON.parse(data);
+    return template.settings || null;
+  } catch (error) {
+    if (error.code === 'ENOENT') return null;
+    console.error('Error reading active.json:', error);
+    return null;
   }
 }
 
-// Initialize user settings from defaults if they don't exist
-function initializeSettingsFromDefaults() {
-  ensureSettingsDir();
+// Write settings as the active template file
+async function writeActiveSettings(settings) {
+  ensureTemplatesDir();
+  const template = {
+    id: 'active',
+    name: 'Active Settings',
+    category: settings.mode === 'roleplay' ? 'roleplay' : 'utility',
+    settings
+  };
+  await fs.writeFile(ACTIVE_FILE, JSON.stringify(template, null, 2), 'utf8');
+}
 
-  // Check if user has any settings
-  const hasAnyFile = Object.values(SETTINGS_FILES).some(f => fs.existsSync(f));
+// SECURITY: Validate avatar image upload
+function validateAvatarImage(base64Data) {
+  if (!base64Data) return;
 
-  // If no user settings exist, copy from defaults
-  if (!hasAnyFile) {
-    console.log('📋 No user settings found. Copying from defaults...');
+  const match = base64Data.match(/^data:image\/(png|jpeg|jpg|gif);base64,(.+)$/);
+  if (!match) {
+    throw new Error('Invalid image format. Only PNG, JPEG, and GIF allowed (no SVG).');
+  }
 
-    for (const [key, userPath] of Object.entries(SETTINGS_FILES)) {
-      const defaultPath = DEFAULT_FILES[key];
+  const [, mimeType, data] = match;
+  const buffer = Buffer.from(data, 'base64');
 
-      // Copy from defaults if default file exists
-      if (fs.existsSync(defaultPath)) {
-        const defaultData = fs.readFileSync(defaultPath, 'utf8');
-        fs.writeFileSync(userPath, defaultData, 'utf8');
-        console.log(`✅ Initialized ${key}.json from defaults`);
-      } else {
-        // Fallback to hardcoded defaults
-        fs.writeFileSync(userPath, JSON.stringify(DEFAULT_SETTINGS[key], null, 2), 'utf8');
-        console.log(`⚠️ No default template for ${key}, using hardcoded defaults`);
-      }
-    }
+  if (buffer.length > 2 * 1024 * 1024) {
+    throw new Error('Image too large. Maximum size: 2MB');
+  }
 
-    console.log('✅ Settings initialized from defaults');
+  const magicBytes = {
+    'png': [0x89, 0x50, 0x4E, 0x47],
+    'jpeg': [0xFF, 0xD8, 0xFF],
+    'jpg': [0xFF, 0xD8, 0xFF],
+    'gif': [0x47, 0x49, 0x46]
+  };
+
+  const signature = Array.from(buffer.slice(0, 4));
+  const expectedMagic = magicBytes[mimeType];
+  if (!expectedMagic || !expectedMagic.every((byte, i) => byte === signature[i])) {
+    throw new Error('Invalid image file signature - file may be corrupted or not a real image');
   }
 }
 
-// Get settings
+// GET /api/settings
 export async function getSettings(req, res) {
   try {
-    // Initialize from defaults if user has no settings
-    initializeSettingsFromDefaults();
-
-    // Load settings from individual JSON files
-    const settings = {};
-
-    for (const [key, filePath] of Object.entries(SETTINGS_FILES)) {
-      if (fs.existsSync(filePath)) {
-        const data = fs.readFileSync(filePath, 'utf8');
-        settings[key] = JSON.parse(data);
-      } else {
-        // Use default if file doesn't exist
-        settings[key] = DEFAULT_SETTINGS[key];
-      }
-    }
-
+    const settings = await readActiveSettings() || BLANK_SETTINGS;
     res.json({ success: true, settings });
   } catch (error) {
     console.error('Error reading settings:', error);
@@ -155,80 +127,51 @@ export async function getSettings(req, res) {
   }
 }
 
-// Save settings
+// POST /api/settings
 export async function saveSettings(req, res) {
   try {
-    ensureSettingsDir();
-
     const { settings } = req.body;
-
     if (!settings) {
       return res.status(400).json({ success: false, error: 'Settings data required' });
     }
 
-    // Update last modified timestamp
+    // Validate avatar images
+    try {
+      if (settings.roleplay?.singleCharacter?.avatarImage) {
+        validateAvatarImage(settings.roleplay.singleCharacter.avatarImage);
+      }
+      if (settings.roleplay?.multipleCharacters) {
+        for (const character of settings.roleplay.multipleCharacters) {
+          if (character.avatarImage) validateAvatarImage(character.avatarImage);
+        }
+      }
+    } catch (error) {
+      return res.status(400).json({ success: false, error: `Avatar validation failed: ${error.message}` });
+    }
+
     settings.meta = {
       ...settings.meta,
       lastModified: new Date().toISOString(),
       version: '1.0.0'
     };
 
-    // Save each category to its individual JSON file
-    for (const [key, filePath] of Object.entries(SETTINGS_FILES)) {
-      if (settings[key] !== undefined) {
-        fs.writeFileSync(filePath, JSON.stringify(settings[key], null, 2), 'utf8');
-      }
-    }
+    await writeActiveSettings(settings);
 
     res.json({ success: true, settings });
   } catch (error) {
     console.error('Error saving settings:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ success: false, error: 'Failed to save settings' });
   }
 }
 
-// Delete settings (reset to defaults)
+// DELETE /api/settings - reset to blank
 export async function deleteSettings(req, res) {
   try {
-    ensureSettingsDir();
-
-    console.log('🔄 Resetting settings to defaults...');
-
-    // Delete all individual JSON files
-    for (const filePath of Object.values(SETTINGS_FILES)) {
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-        console.log(`🗑️ Deleted user settings file: ${path.basename(filePath)}`);
-      }
-    }
-
-    // Copy from defaults (same as initialization)
-    console.log('📋 Copying from defaults folder...');
-    for (const [key, userPath] of Object.entries(SETTINGS_FILES)) {
-      const defaultPath = DEFAULT_FILES[key];
-
-      // Copy from defaults if default file exists
-      if (fs.existsSync(defaultPath)) {
-        const defaultData = fs.readFileSync(defaultPath, 'utf8');
-        fs.writeFileSync(userPath, defaultData, 'utf8');
-        console.log(`✅ Restored ${key}.json from defaults`);
-      } else {
-        // Fallback to hardcoded defaults
-        fs.writeFileSync(userPath, JSON.stringify(DEFAULT_SETTINGS[key], null, 2), 'utf8');
-        console.log(`⚠️ No default template for ${key}, using hardcoded defaults`);
-      }
-    }
-
-    // Load the freshly initialized settings
-    const settings = {};
-    for (const [key, filePath] of Object.entries(SETTINGS_FILES)) {
-      const data = fs.readFileSync(filePath, 'utf8');
-      settings[key] = JSON.parse(data);
-    }
-
-    console.log('✅ Settings reset to defaults successfully');
-
-    res.json({ success: true, settings });
+    await fs.unlink(ACTIVE_FILE).catch(err => {
+      if (err.code !== 'ENOENT') throw err;
+    });
+    console.log('🗑️ Deleted active.json - settings reset to blank');
+    res.json({ success: true, settings: BLANK_SETTINGS });
   } catch (error) {
     console.error('Error resetting settings:', error);
     res.status(500).json({ success: false, error: error.message });

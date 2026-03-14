@@ -8,7 +8,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const SETTINGS_DIR = path.join(__dirname, '..', 'data', 'settings');
+const ACTIVE_FILE = path.join(__dirname, '..', 'data', 'templates', 'active.json');
 
 class SettingsToolsServer {
   constructor() {

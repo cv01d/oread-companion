@@ -1,26 +1,27 @@
 import { useState } from 'react';
-import { TEMPLATES } from '../../data/templates';
+import useStore from '../../store/useStore';
 import Dropdown from '../ui/Dropdown';
 import Button from '../ui/Button';
 
 export default function TemplateSelector({ selectedTemplateId, onSelect }) {
+  const templates = useStore((state) => state.templates);
   const [previewTemplateId, setPreviewTemplateId] = useState(selectedTemplateId || '');
 
   // Create dropdown options
   const templateOptions = [
     { value: '', label: 'None (Custom Settings)' },
-    ...TEMPLATES.map(t => ({
+    ...templates.map(t => ({
       value: t.id,
       label: t.name
     }))
   ];
 
   // Get the currently previewed template
-  const previewTemplate = TEMPLATES.find(t => t.id === previewTemplateId);
+  const previewTemplate = templates.find(t => t.id === previewTemplateId);
 
   const handleApply = () => {
     if (previewTemplateId) {
-      const template = TEMPLATES.find(t => t.id === previewTemplateId);
+      const template = templates.find(t => t.id === previewTemplateId);
       onSelect(template);
     } else {
       onSelect(null);
@@ -69,7 +70,7 @@ export default function TemplateSelector({ selectedTemplateId, onSelect }) {
       {/* Currently Applied Template */}
       {selectedTemplateId && (
         <div className="template-selector__current">
-          <strong>Currently Applied:</strong> {TEMPLATES.find(t => t.id === selectedTemplateId)?.name || 'Unknown'}
+          <strong>Currently Applied:</strong> {templates.find(t => t.id === selectedTemplateId)?.name || 'Unknown'}
         </div>
       )}
     </div>

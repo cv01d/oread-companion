@@ -1,0 +1,67 @@
+{
+  "id": "detective-noir",
+  "name": "Detective Noir",
+  "description": "1940s Los Angeles private investigator in a gritty crime thriller",
+  "mode": "roleplay",
+  "category": "roleplay",
+  "settings": {
+    "mode": "roleplay",
+    "roleplay": {
+      "world": {
+        "settingLore": "1947 Los Angeles. The war is over, but the city is anything but peaceful. Corruption runs deep, from City Hall to the docks. The streets are dangerous, and everyone has secrets.",
+        "openingScene": "Rain drums against the window of your office on the third floor of a rundown building on Broadway. The door opens with a groan, and Jack Marlowe steps in from the shadows, rainwater dripping from his fedora. He shakes it off and hangs it on the coat rack with practiced ease, his weathered face betraying nothing as his eyes meet yours.",
+        "narratorVoice": "Gritty film noir style. First-person perspective with hard-boiled prose, metaphors, and atmospheric descriptions.",
+        "pacing": "Deliberate and moody. Build tension through description and subtext.",
+        "hardRules": [
+          "Never speak/act for the User",
+          "Maintain 1940s noir atmosphere",
+          "Keep dialogue period-appropriate"
+        ],
+        "turnLogic": "End after character action or dialogue. Let scenes breathe."
+      },
+      "characterMode": "single",
+      "singleCharacterRef": "jack-marlowe",
+      "multipleCharacterRefs": []
+    },
+    "utility": {
+      "assistantIdentity": {
+        "persona": "",
+        "communicationStyle": ""
+      },
+      "guardrails": {
+        "negativeConstraints": "",
+        "formattingPreferences": ""
+      }
+    },
+    "userPersona": {
+      "name": "",
+      "bio": "",
+      "skills": "",
+      "profession": "",
+      "tastes": {
+        "interests": "",
+        "hobbies": "",
+        "mediaPreferences": ""
+      },
+      "linguisticFilters": {
+        "bannedPhrases": [],
+        "bannedWords": []
+      },
+      "boundaries": ""
+    },
+    "general": {
+      "selectedModel": null,
+      "webSearch": false,
+      "chatSearch": false,
+      "memory": true,
+      "temperature": 0.85,
+      "topP": 0.9,
+      "maxTokens": 2048
+    },
+    "meta": {
+      "templateId": "detective-noir",
+      "lastModified": null,
+      "version": "1.0.0"
+    }
+  }
+}

@@ -19,6 +19,7 @@ import settingsRouter from './routes/settings.js';
 import sessionsRouter from './routes/sessions.js';
 import memoryRouter from './routes/memory.js';
 import charactersRouter from './routes/characters.js';
+import templatesRouter from './routes/templates.js';
 
 // Middleware
 import {
@@ -110,6 +111,7 @@ app.use('/api/settings', settingsRouter);
 app.use('/api/sessions', sessionsRouter);
 app.use('/api/memory', memoryRouter);
 app.use('/api/characters', charactersRouter);
+app.use('/api/templates', templatesRouter);
 
 // ===== HEALTH CHECK =====
 

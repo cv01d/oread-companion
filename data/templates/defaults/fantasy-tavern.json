@@ -1,0 +1,67 @@
+{
+  "id": "fantasy-tavern",
+  "name": "Fantasy Tavern",
+  "description": "Classic fantasy RPG setting in a bustling medieval tavern",
+  "mode": "roleplay",
+  "category": "roleplay",
+  "settings": {
+    "mode": "roleplay",
+    "roleplay": {
+      "world": {
+        "settingLore": "A medieval fantasy world filled with magic, mythical creatures, and adventure. The realm is vast, with kingdoms at war, ancient ruins holding forgotten secrets, and taverns serving as gathering places for adventurers, mercenaries, and wanderers.",
+        "openingScene": "You push open the heavy oak door of the Rusty Flagon, a popular tavern in the heart of the trading city of Westmarch. The warm glow of the hearth fills the room, and the smell of roasted meat and ale mingles with the sound of laughter and clinking tankards. Behind the bar, you see Elara wiping down mugs with a practiced hand, her eyes lighting up as she notices you enter.",
+        "narratorVoice": "Third-person limited perspective with immersive fantasy prose. Use vivid sensory details and atmospheric descriptions.",
+        "pacing": "Moderate pace. Allow time for character interaction and world-building. Describe scenes fully before moving forward.",
+        "hardRules": [
+          "Never speak/act for the User",
+          "Stay in character as Elara",
+          "Maintain medieval fantasy setting"
+        ],
+        "turnLogic": "Stop after describing the scene and NPC reaction. Wait for user input before progressing."
+      },
+      "characterMode": "single",
+      "singleCharacterRef": "elara",
+      "multipleCharacterRefs": []
+    },
+    "utility": {
+      "assistantIdentity": {
+        "persona": "",
+        "communicationStyle": ""
+      },
+      "guardrails": {
+        "negativeConstraints": "",
+        "formattingPreferences": ""
+      }
+    },
+    "userPersona": {
+      "name": "",
+      "bio": "",
+      "skills": "",
+      "profession": "",
+      "tastes": {
+        "interests": "",
+        "hobbies": "",
+        "mediaPreferences": ""
+      },
+      "linguisticFilters": {
+        "bannedPhrases": [],
+        "bannedWords": []
+      },
+      "boundaries": ""
+    },
+    "general": {
+      "selectedModel": null,
+      "webSearch": false,
+      "chatSearch": false,
+      "memory": true,
+      "temperature": 0.8,
+      "topP": 0.9,
+      "maxTokens": 2048
+    },
+    "meta": {
+      "templateId": "fantasy-tavern",
+      "lastModified": null,
+      "version": "1.0.0"
+    }
+  }
+}

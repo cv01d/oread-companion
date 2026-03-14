@@ -16,7 +16,6 @@ import GeneralSettingsPanel from '../components/settings/GeneralSettingsPanel';
 import SessionManager from '../components/session/SessionManager';
 import Button from '../components/ui/Button';
 import Dropdown from '../components/ui/Dropdown';
-import { TEMPLATES } from '../data/templates';
 import { exportSettings, importSettings, copySettingsToClipboard } from '../utils/settingsImportExport';
 import { DEFAULT_SETTINGS } from '../data/defaultSettings';
 import { copyDefaultCharacterToUser } from '../utils/characterAPI';

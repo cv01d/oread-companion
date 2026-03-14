@@ -1,5 +1,6 @@
 import express from 'express';
 import { getSettings, saveSettings, deleteSettings } from '../controllers/settingsController.js';
+import { validate, settingsSchema } from '../middleware/validation.js';
 
 const router = express.Router();
 
@@ -7,7 +8,7 @@ const router = express.Router();
 router.get('/', getSettings);
 
 // POST /api/settings - Save user settings
-router.post('/', saveSettings);
+router.post('/', validate(settingsSchema), saveSettings);
 
 // DELETE /api/settings - Reset to defaults
 router.delete('/', deleteSettings);
