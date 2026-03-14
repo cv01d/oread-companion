@@ -3,7 +3,8 @@ import TextField from '../ui/TextField';
 import TextArea from '../ui/TextArea';
 import ImageUpload from '../ui/ImageUpload';
 import MultiSelect from '../ui/MultiSelect';
-import { getCharacter, saveCharacter } from '../../utils/characterAPI';
+import Button from '../ui/Button';
+import { getCharacter, saveCharacter, deleteCharacter as deleteCharacterFile } from '../../utils/characterAPI';
 import { generateCharacterId, characterFileToSettings } from '../../utils/characterConverter';
 
 // Personality trait options

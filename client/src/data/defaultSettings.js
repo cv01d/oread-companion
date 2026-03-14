@@ -13,7 +13,7 @@ export const DEFAULT_SETTINGS = {
       turnLogic: ''
     },
     characterMode: 'single', // 'single' or 'multi'
-    singleCharacterRef: 'echo', // Reference to character file ID
+    singleCharacterRef: '', // Reference to character file ID (empty until template applied)
     multipleCharacterRefs: [] // Array of character file IDs
   },
 
