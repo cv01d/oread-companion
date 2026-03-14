@@ -11,7 +11,8 @@ data/
 │
 ├── characters/
 │   ├── defaults/               # Default character templates (in git)
-│   │   ├── echo.json          # Default companion character
+│   │   ├── echo.json          # Companion - sassy & playful
+│   │   ├── kairos.json        # Companion - calm & reflective
 │   │   ├── assistant.json     # Default utility assistant
 │   │   ├── elara.json         # Fantasy tavern keeper
 │   │   ├── commander-zara.json # Sci-fi ship AI
@@ -20,11 +21,15 @@ data/
 │   │
 │   └── *.json                  # User-created characters (excluded from git)
 │
-├── lorebook/                   # Personality trait templates (in git)
-│   ├── emotional-expression.json
-│   ├── social-energy.json      # (to be created)
-│   ├── thinking-style.json     # (to be created)
-│   └── ...                     # (other trait categories)
+├── personality-system/         # Personality trait templates (in git)
+│   ├── emotional-expression.json  # 10 traits for emotional tone
+│   ├── social-energy.json         # 8 traits for social interaction
+│   ├── thinking-style.json        # 9 traits for cognitive style (to be created)
+│   ├── humor-edge.json            # 9 traits for wit and personality (to be created)
+│   ├── core-values.json           # 10 traits for motivations (to be created)
+│   ├── how-they-care.json         # 9 traits for care expression (to be created)
+│   ├── energy-presence.json       # 8 traits for vibe and presence (to be created)
+│   └── lifestyle-interests.json   # 8 traits for lifestyle alignment (to be created)
 │
 ├── settings/
 │   ├── defaults/               # Default settings templates (in git)
@@ -49,7 +54,7 @@ data/
 ### ✅ Tracked in Git (Defaults & Templates)
 - `avatars/` - Default avatar images
 - `characters/defaults/` - Default character templates
-- `lorebook/` - Personality trait templates
+- `personality-system/` - Personality trait templates
 - `settings/defaults/` - Default settings templates
 - This README file
 
@@ -90,3 +95,28 @@ You can reset any character to its default version:
 1. API: `POST /api/characters/reset/:id`
 2. This copies from `characters/defaults/:id.json` → `characters/:id.json`
 3. User customizations are overwritten with the default template
+
+## Personality System
+
+The personality system contains 8 trait categories with detailed definitions and emotion-specific guidance. These traits are available as multi-select options in the character editor.
+
+### How It Works:
+1. User selects traits in character editor (e.g., "Warm", "Extroverted", "Curious")
+2. Selected traits are stored in character JSON file under `traits` object
+3. Traits are rendered in system prompt under **PERSONALITY TRAITS** section
+4. LLM uses traits to influence dialogue generation
+
+### Trait Categories:
+Each category contains 8-10 specific traits with emotion-aware tone/action guidance for future RAG enhancement:
+
+1. **Emotional Expression** (10 traits) - How they show feelings
+2. **Social Energy** (8 traits) - How they interact with the world
+3. **Thinking Style** (9 traits) - How they think and communicate
+4. **Humor & Edge** (9 traits) - Their wit and character depth
+5. **Core Values** (10 traits) - What drives them
+6. **How They Care** (9 traits) - How they relate to others
+7. **Energy & Presence** (8 traits) - Their vibe and how they show up
+8. **Lifestyle & Interests** (8 traits) - What matters to them
+
+### JSON File Structure:
+Each personality trait file contains emotion-specific responses with `tone` (how character sounds) and `action` (behaviors exhibited), plus priority weighting and directive mapping for future dialogue generation enhancements.

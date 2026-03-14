@@ -17,11 +17,12 @@
 5. **Comprehensive Settings System** with roleplay and utility modes
 6. **Template-based Configuration** with 8 preset templates
 7. **Character Management** for roleplay scenarios
-8. **Persistent Settings Storage** in individual JSON files
-9. **Memory System** with session management and RAG (NEW v3.0.0)
-10. **Chat History Persistence** via SQLite and MCP (NEW v3.0.0)
-11. **Vector Memory** using SQLite BLOB storage (v3.1.0 - migrated from FAISS)
-12. **Auto-Extraction** of character details from conversations (NEW v3.0.0)
+8. **Personality System** with 8 trait categories and 70+ individual traits
+9. **Persistent Settings Storage** in individual JSON files
+10. **Memory System** with session management and RAG (NEW v3.0.0)
+11. **Chat History Persistence** via SQLite and MCP (NEW v3.0.0)
+12. **Vector Memory** using SQLite BLOB storage (v3.1.0 - migrated from FAISS)
+13. **Auto-Extraction** of character details from conversations (NEW v3.0.0)
 
 ---
 
@@ -1015,6 +1016,138 @@ cd client && npm run dev
 # - "🧠 Using RAG" (after 50 messages)
 # - "🔍 Running extraction analysis" (every 5 messages in roleplay)
 ```
+
+---
+
+## Personality System
+
+**8 trait categories** with 70+ individual personality traits for character customization.
+
+### Overview
+
+The personality system provides multi-select trait options in the character editor that directly influence dialogue generation. Traits are stored with character data and injected into system prompts.
+
+### Trait Categories
+
+1. **Emotional Expression** (10 traits) - How they show feelings
+   - Warm, Reserved, Passionate, Calm, Stoic, Sensitive, Expressive, Grumpy, Volatile, Abrasive
+
+2. **Social Energy** (8 traits) - How they interact with the world
+   - Extroverted, Introverted, Friendly, Selective, Takes Initiative, Supportive, Independent, Surly
+
+3. **Thinking Style** (9 traits) - How they think and communicate
+   - Analytical, Creative, Wise, Curious, Observant, Philosophical, Pensive, Poetic, Practical
+
+4. **Humor & Edge** (9 traits) - Their wit and character depth
+   - Witty, Sarcastic, Playful, Wry, Bold, Mysterious, Brooding, Lighthearted, Sharp-Tongued
+
+5. **Core Values** (10 traits) - What drives them
+   - Honest, Loyal, Courageous, Ambitious, Humble, Principled, Adventurous, Authentic, Justice-Oriented, Cynical
+
+6. **How They Care** (9 traits) - How they relate to others
+   - Kind, Compassionate, Empathetic, Patient, Generous, Encouraging, Protective, Respectful, Nurturing
+
+7. **Energy & Presence** (8 traits) - Their vibe and how they show up
+   - Energetic, Confident, Assertive, Gentle, Steady, Dynamic, Intense, Easygoing
+
+8. **Lifestyle & Interests** (8 traits) - What matters to them
+   - Outdoorsy, Homebody, Romantic, Intellectual, Artistic, Active, Contemplative, Social
+
+### Character Editor Integration
+
+**Location**: Settings → Roleplay Settings → Character Editor
+
+**Features**:
+- All 8 categories available as multi-select fields
+- Traits stored in character JSON files under `traits` object
+- Automatically rendered in system prompt
+- Supports custom trait additions (users can add their own)
+- MultiSelect UI with clickable buttons and removable tags
+
+### Data Flow
+
+```
+Character Editor UI (MultiSelect components)
+  ↓
+Character State (EMPTY_CHARACTER.traits)
+  ↓
+Character JSON File (/data/characters/*.json)
+  ↓
+Prompt Builder (buildSingleCharacterSection)
+  ↓
+System Prompt (**PERSONALITY TRAITS** section)
+  ↓
+LLM uses traits to influence dialogue
+```
+
+**Example in System Prompt**:
+```
+**PERSONALITY TRAITS:**
+Emotional Expression: Warm, Expressive
+Social Energy: Extroverted, Friendly, Takes Initiative
+Thinking Style: Curious, Observant, Practical
+Humor & Personality: Witty, Sarcastic, Playful
+Core Values: Honest, Loyal, Authentic
+How They Care: Supportive
+Energy & Presence: Energetic
+Lifestyle & Interests: Social
+```
+
+### Personality System JSON Files
+
+**Location**: `/data/personality-system/`
+
+**Purpose**:
+- Documentation of trait definitions and descriptions
+- Emotion-specific tone/action guidance for each trait
+- Priority weightings (65-85 scale)
+- Directive mappings (emotional_tone, social_action, cognitive_structure, dialogue_nuance, core_motivation, context)
+
+**Structure**:
+```json
+{
+  "category": "thinking_style",
+  "directive": "cognitive_structure",
+  "description": "How characters think and communicate ideas",
+  "traits": {
+    "Analytical": {
+      "id": "ts_analytical",
+      "category": "thinking_style",
+      "directive": "cognitive_structure",
+      "priority": 80,
+      "emotion_responses": {
+        "confusion": {"tone": "logical, systematic", "action": "Break down problems methodically."},
+        "anxiety": {"tone": "rational, calming", "action": "Help think through worries logically."},
+        "default": {"tone": "logical, systematic", "action": "Examine and break down topics."}
+      }
+    }
+  }
+}
+```
+
+**Files** (tracked in git):
+- `emotional-expression.json` - 10 traits for emotional tone
+- `social-energy.json` - 8 traits for social interaction
+- `thinking-style.json` - 9 traits for cognitive style
+- `humor-edge.json` - 9 traits for wit and personality
+- `core-values.json` - 10 traits for motivations
+- `how-they-care.json` - 9 traits for care expression
+- `energy-presence.json` - 8 traits for vibe and presence
+- `lifestyle-interests.json` - 8 traits for lifestyle alignment
+
+### Implementation Details
+
+**No RAG System Needed**: Traits are directly injected into the system prompt, not retrieved via semantic search. The JSON files serve as documentation/reference for trait definitions.
+
+**Future Enhancement**: Could add RAG to retrieve emotion-specific tone/action guidance based on conversation context and detected emotions.
+
+**Backward Compatible**: Existing character files without trait properties default to empty arrays via the `||` operator.
+
+**Key Files**:
+- `client/src/components/settings/CharacterEditor.jsx` - TRAIT_OPTIONS constant (lines 11-20)
+- `client/src/utils/characterConverter.js` - Character file format conversion
+- `client/src/utils/promptBuilder.js` - System prompt generation with traits
+- `/data/personality-system/*.json` - Trait definitions and emotion-specific guidance
 
 ---
 

@@ -1,6 +1,8 @@
 // System prompt builder with variable mapping
 // AUTO-GENERATED prompts - not shown to user
 
+import { getCharacterTraitDefinitions, buildPersonalityGuidance } from './personalitySystemLoader.js';
+
 /**
  * Build system prompt from settings using variable mapping
  * @param {Object} settings - User settings object
@@ -39,6 +41,22 @@ function buildRoleplayPrompt(settings) {
   if (world.narratorVoice) {
     prompt += `**NARRATOR VOICE:**\nYou are the ${world.narratorVoice}. `;
     prompt += `Maintain this narrative style throughout the conversation.\n\n`;
+
+    // Auto-add emoting instructions for companion/chat narrative styles
+    const narrativeStyleLower = world.narratorVoice.toLowerCase();
+    const isCompanionStyle = narrativeStyleLower.includes('playful') ||
+                            narrativeStyleLower.includes('warm') ||
+                            narrativeStyleLower.includes('gentle') ||
+                            narrativeStyleLower.includes('serene') ||
+                            characterMode === 'single'; // All single-character modes get emoting
+
+    if (isCompanionStyle) {
+      prompt += `**EMOTING STYLE:**\n`;
+      prompt += `Use parenthetical emoting to add expressiveness and personality to your responses. `;
+      prompt += `Emotes should feel natural and conversational, showing your reactions and gestures.\n\n`;
+      prompt += `Examples: (grins), (leans in), (laughs), (raises an eyebrow), (tilts head thoughtfully)\n\n`;
+      prompt += `Keep emotes brief, natural, and organic to the conversation flow. Don't overuse them - sprinkle them in where they add flavor and personality.\n\n`;
+    }
   }
 
   if (world.pacing) {
@@ -122,36 +140,14 @@ function buildSingleCharacterSection(character) {
     section += `**Inventory:**\n${character.inventory}\n\n`;
   }
 
-  // Personality Traits
+  // Personality System - Load detailed trait definitions and guidance
   if (character.traits) {
-    section += `**PERSONALITY TRAITS:**\n`;
+    const traitDefinitions = getCharacterTraitDefinitions(character.traits);
+    const personalityGuidance = buildPersonalityGuidance(traitDefinitions);
 
-    if (character.traits.emotionalExpression && character.traits.emotionalExpression.length > 0) {
-      section += `Emotional Expression: ${character.traits.emotionalExpression.join(', ')}\n`;
+    if (personalityGuidance) {
+      section += personalityGuidance;
     }
-    if (character.traits.socialEnergy && character.traits.socialEnergy.length > 0) {
-      section += `Social Energy: ${character.traits.socialEnergy.join(', ')}\n`;
-    }
-    if (character.traits.thinkingStyle && character.traits.thinkingStyle.length > 0) {
-      section += `Thinking Style: ${character.traits.thinkingStyle.join(', ')}\n`;
-    }
-    if (character.traits.humorPersonality && character.traits.humorPersonality.length > 0) {
-      section += `Humor & Personality: ${character.traits.humorPersonality.join(', ')}\n`;
-    }
-    if (character.traits.coreValues && character.traits.coreValues.length > 0) {
-      section += `Core Values: ${character.traits.coreValues.join(', ')}\n`;
-    }
-    if (character.traits.howTheyCare && character.traits.howTheyCare.length > 0) {
-      section += `How They Care: ${character.traits.howTheyCare.join(', ')}\n`;
-    }
-    if (character.traits.energyPresence && character.traits.energyPresence.length > 0) {
-      section += `Energy & Presence: ${character.traits.energyPresence.join(', ')}\n`;
-    }
-    if (character.traits.lifestyleInterests && character.traits.lifestyleInterests.length > 0) {
-      section += `Lifestyle & Interests: ${character.traits.lifestyleInterests.join(', ')}\n`;
-    }
-
-    section += `\n`;
   }
 
   return section;
@@ -197,36 +193,13 @@ function buildMultipleCharactersSection(characters) {
       section += `Inventory: ${character.inventory}\n`;
     }
 
-    // Personality Traits
+    // Personality System - Load detailed trait definitions and guidance
     if (character.traits) {
-      const hasTraits = Object.values(character.traits).some(arr => arr && arr.length > 0);
-      if (hasTraits) {
-        section += `\n**Personality Traits:**\n`;
+      const traitDefinitions = getCharacterTraitDefinitions(character.traits);
+      const personalityGuidance = buildPersonalityGuidance(traitDefinitions);
 
-        if (character.traits.emotionalExpression && character.traits.emotionalExpression.length > 0) {
-          section += `- Emotional Expression: ${character.traits.emotionalExpression.join(', ')}\n`;
-        }
-        if (character.traits.socialEnergy && character.traits.socialEnergy.length > 0) {
-          section += `- Social Energy: ${character.traits.socialEnergy.join(', ')}\n`;
-        }
-        if (character.traits.thinkingStyle && character.traits.thinkingStyle.length > 0) {
-          section += `- Thinking Style: ${character.traits.thinkingStyle.join(', ')}\n`;
-        }
-        if (character.traits.humorPersonality && character.traits.humorPersonality.length > 0) {
-          section += `- Humor & Personality: ${character.traits.humorPersonality.join(', ')}\n`;
-        }
-        if (character.traits.coreValues && character.traits.coreValues.length > 0) {
-          section += `- Core Values: ${character.traits.coreValues.join(', ')}\n`;
-        }
-        if (character.traits.howTheyCare && character.traits.howTheyCare.length > 0) {
-          section += `- How They Care: ${character.traits.howTheyCare.join(', ')}\n`;
-        }
-        if (character.traits.energyPresence && character.traits.energyPresence.length > 0) {
-          section += `- Energy & Presence: ${character.traits.energyPresence.join(', ')}\n`;
-        }
-        if (character.traits.lifestyleInterests && character.traits.lifestyleInterests.length > 0) {
-          section += `- Lifestyle & Interests: ${character.traits.lifestyleInterests.join(', ')}\n`;
-        }
+      if (personalityGuidance) {
+        section += `\n${personalityGuidance}`;
       }
     }
 

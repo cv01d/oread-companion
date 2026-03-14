@@ -3,7 +3,7 @@ node_modules/
 client/node_modules/
 
 # User data (exclude user customizations, keep defaults)
-# Keep: /data/characters/defaults/, /data/lorebook/, /data/avatars/, /data/settings/defaults/
+# Keep: /data/characters/defaults/, /data/personality-system/, /data/avatars/, /data/settings/defaults/
 # Exclude: user settings, user characters, database, vector store
 
 # Exclude user settings (but keep defaults folder)
