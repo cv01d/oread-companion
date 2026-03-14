@@ -44,7 +44,8 @@ describe('POST /embed', () => {
       .send({ messages: [{ role: 'user', content: 'hi' }] })
       .expect(400);
 
-    expect(res.body.error).toMatch(/sessionId/i);
+    expect(res.body.success).toBe(false);
+    expect(res.body.details.some(d => d.field === 'sessionId')).toBe(true);
   });
 
   it('returns 400 when messages is not an array', async () => {
@@ -53,16 +54,28 @@ describe('POST /embed', () => {
       .send({ sessionId: VALID_UUID, messages: 'not-an-array' })
       .expect(400);
 
-    expect(res.body.error).toBeDefined();
+    expect(res.body.success).toBe(false);
+    expect(res.body.details).toBeDefined();
+  });
+
+  it('returns 400 when messages array is empty', async () => {
+    const res = await request(createApp())
+      .post('/embed')
+      .send({ sessionId: VALID_UUID, messages: [] })
+      .expect(400);
+
+    expect(res.body.success).toBe(false);
+    expect(res.body.details.some(d => d.field === 'messages')).toBe(true);
   });
 
   it('returns 400 for an invalid (non-UUID) sessionId', async () => {
     const res = await request(createApp())
       .post('/embed')
-      .send({ sessionId: 'bad-id', messages: [] })
+      .send({ sessionId: 'bad-id', messages: [{ role: 'user', content: 'hi' }] })
       .expect(400);
 
-    expect(res.body.error).toMatch(/sessionId/i);
+    expect(res.body.success).toBe(false);
+    expect(res.body.details.some(d => d.field === 'sessionId')).toBe(true);
   });
 
   it('fires addDocuments in the background and responds immediately', async () => {
@@ -93,13 +106,23 @@ describe('POST /search', () => {
     expect(res.body.results).toHaveLength(1);
   });
 
+  it('applies the default topK of 5 when not provided', async () => {
+    await request(createApp())
+      .post('/search')
+      .send({ sessionId: VALID_UUID, query: 'hello' })
+      .expect(200);
+
+    expect(langchainRAG.searchVectors).toHaveBeenCalledWith(VALID_UUID, expect.any(Array), 5);
+  });
+
   it('returns 400 when query is missing', async () => {
     const res = await request(createApp())
       .post('/search')
       .send({ sessionId: VALID_UUID })
       .expect(400);
 
-    expect(res.body.error).toMatch(/query/i);
+    expect(res.body.success).toBe(false);
+    expect(res.body.details.some(d => d.field === 'query')).toBe(true);
   });
 
   it('returns 400 for an invalid sessionId', async () => {
@@ -108,7 +131,8 @@ describe('POST /search', () => {
       .send({ sessionId: 'not-uuid', query: 'hello' })
       .expect(400);
 
-    expect(res.body.error).toMatch(/sessionId/i);
+    expect(res.body.success).toBe(false);
+    expect(res.body.details.some(d => d.field === 'sessionId')).toBe(true);
   });
 
   it('returns 400 when sessionId is missing', async () => {
@@ -117,7 +141,8 @@ describe('POST /search', () => {
       .send({ query: 'hello' })
       .expect(400);
 
-    expect(res.body.error).toMatch(/sessionId/i);
+    expect(res.body.success).toBe(false);
+    expect(res.body.details.some(d => d.field === 'sessionId')).toBe(true);
   });
 });
 

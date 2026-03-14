@@ -63,8 +63,8 @@ export const modelPullSchema = Joi.object({
 // Session creation validation
 export const sessionCreateSchema = Joi.object({
   name: Joi.string().max(200).required(),
-  character_name: Joi.string().max(200).optional(),
-  character_mode: Joi.string().valid('single', 'multiple').optional(),
+  character_name: Joi.string().max(200).allow(null).optional(),
+  character_mode: Joi.string().valid('single', 'multi').optional(),
   mode: Joi.string().valid('roleplay', 'normal').required(),
   settings_snapshot: Joi.object().optional()
 });
@@ -93,15 +93,9 @@ export const settingsSchema = Joi.object({
 
     roleplay: Joi.object({
       world: Joi.object().optional(),
-      characterMode: Joi.string().valid('single', 'multiple').optional(),
-      singleCharacter: Joi.object({
-        identity: Joi.object().optional(),
-        core: Joi.object().optional(),
-        background: Joi.object().optional(),
-        traits: Joi.object().optional(),
-        avatarImage: Joi.string().max(3000000).optional() // ~2MB base64
-      }).optional(),
-      multipleCharacters: Joi.array().optional()
+      characterMode: Joi.string().valid('single', 'multi').optional(),
+      singleCharacterRef: Joi.string().max(100).allow('').optional(),
+      multipleCharacterRefs: Joi.array().items(Joi.string().max(100)).optional()
     }).optional(),
 
     utility: Joi.object().optional(),
@@ -119,6 +113,35 @@ export const settingsSchema = Joi.object({
 
     meta: Joi.object().optional()
   }).required()
+});
+
+// Memory embed validation
+export const embedSchema = Joi.object({
+  sessionId: Joi.string()
+    .pattern(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+    .required()
+    .messages({ 'string.pattern.base': 'Invalid session ID format' }),
+  messages: Joi.array()
+    .items(
+      Joi.object({
+        role: Joi.string().valid('user', 'assistant', 'system').required(),
+        content: Joi.string().max(100000).required(),
+        id: Joi.string().optional()
+      })
+    )
+    .min(1)
+    .required()
+    .messages({ 'array.min': 'At least one message is required' })
+});
+
+// Memory text search validation
+export const memorySearchSchema = Joi.object({
+  sessionId: Joi.string()
+    .pattern(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+    .required()
+    .messages({ 'string.pattern.base': 'Invalid session ID format' }),
+  query: Joi.string().max(10000).required(),
+  topK: Joi.number().integer().min(1).max(100).optional().default(5)
 });
 
 // Vector search validation
@@ -248,5 +271,7 @@ export default {
   sessionUpdateSchema,
   characterIdSchema,
   settingsSchema,
+  embedSchema,
+  memorySearchSchema,
   vectorSearchSchema
 };
