@@ -3,6 +3,7 @@ import { DEFAULT_SETTINGS } from '../data/defaultSettings';
 import { loadTemplates } from '../data/templates';
 import { buildSystemPrompt, detectModeToggle } from '../utils/promptBuilder';
 import { saveSettings as saveSettingsAPI, loadSettings as loadSettingsAPI } from '../utils/settingsAPI';
+import { saveUserTemplate as saveUserTemplateAPI, deleteUserTemplate as deleteUserTemplateAPI } from '../utils/templateAPI';
 import { apiFetch } from '../utils/apiClient';
 
 // Debounce timeout reference
@@ -72,69 +73,28 @@ const useStore = create((set, get) => ({
     }
   },
 
-  // Load characters from files for prompt building
-  loadCharactersForPrompt: async (settings) => {
-    try {
-      const settingsCopy = { ...settings };
+  // Load inline character data for prompt building
+  loadCharactersForPrompt: (settings) => {
+    const settingsCopy = { ...settings };
 
-      // Single character mode
-      if (settings.roleplay.characterMode === 'single') {
-        // Use inline character data from template if available
-        if (settings.roleplay.character) {
-          settingsCopy.roleplay = {
-            ...settingsCopy.roleplay,
-            _loadedCharacters: [settings.roleplay.character]
-          };
-        } else if (settings.roleplay.singleCharacterRef) {
-          // Fall back to API for user-created characters
-          const { getCharacter } = await import('../utils/characterAPI.js');
-          const { characterFileToSettings } = await import('../utils/characterConverter.js');
-          const charFile = await getCharacter(settings.roleplay.singleCharacterRef);
-          if (charFile) {
-            settingsCopy.roleplay = {
-              ...settingsCopy.roleplay,
-              _loadedCharacters: [characterFileToSettings(charFile)]
-            };
-          } else {
-            settingsCopy.roleplay = {
-              ...settingsCopy.roleplay,
-              _loadedCharacters: [{
-                name: settings.roleplay.singleCharacterRef || 'Assistant',
-                role: '', knowledgeSkills: '', hobbiesInterests: '',
-                thingsToAvoid: '', backstory: '', inventory: '', traits: {}
-              }]
-            };
-          }
-        }
-      }
-
-      // Multi character mode
-      if (settings.roleplay.characterMode === 'multi' && settings.roleplay.multipleCharacterRefs?.length > 0) {
-        const { getCharacter } = await import('../utils/characterAPI.js');
-        const { characterFileToSettings } = await import('../utils/characterConverter.js');
-        const loadedChars = [];
-        for (const charRef of settings.roleplay.multipleCharacterRefs) {
-          const charFile = await getCharacter(charRef);
-          if (charFile) {
-            loadedChars.push(characterFileToSettings(charFile));
-          } else {
-            loadedChars.push({
-              name: charRef, role: '', knowledgeSkills: '', hobbiesInterests: '',
-              thingsToAvoid: '', backstory: '', inventory: '', traits: {}
-            });
-          }
-        }
-        settingsCopy.roleplay = {
-          ...settingsCopy.roleplay,
-          _loadedCharacters: loadedChars
-        };
-      }
-
-      return settingsCopy;
-    } catch (error) {
-      console.error('Failed to load characters for prompt:', error);
-      return settings;
+    if (settings.roleplay.characterMode === 'single') {
+      settingsCopy.roleplay = {
+        ...settingsCopy.roleplay,
+        _loadedCharacters: settings.roleplay.character
+          ? [settings.roleplay.character]
+          : [{ name: 'Assistant', role: '', knowledgeSkills: '', hobbiesInterests: '',
+               thingsToAvoid: '', backstory: '', inventory: '', traits: {} }]
+      };
     }
+
+    if (settings.roleplay.characterMode === 'multi' && settings.roleplay.characters?.length > 0) {
+      settingsCopy.roleplay = {
+        ...settingsCopy.roleplay,
+        _loadedCharacters: settings.roleplay.characters
+      };
+    }
+
+    return settingsCopy;
   },
 
   // ==========================================
@@ -211,6 +171,7 @@ const useStore = create((set, get) => ({
         systemPrompt: systemPrompt,
         temperature: state.settings.general.temperature,
         topP: state.settings.general.topP,
+        frequencyPenalty: state.settings.general.frequencyPenalty,
         maxTokens: state.settings.general.maxTokens,
         sessionId: state.currentSessionId,
         settings: state.settings
@@ -463,7 +424,7 @@ const useStore = create((set, get) => ({
         body: JSON.stringify({
           name,
           mode: settings?.mode || 'normal',
-          character_name: settings?.roleplay?.singleCharacterRef || null,
+          character_name: settings?.roleplay?.character?.name || null,
           character_mode: settings?.roleplay?.characterMode || 'single',
           settings_snapshot: settings || null
         })
@@ -727,6 +688,29 @@ const useStore = create((set, get) => ({
   // ==========================================
   // TEMPLATES
   // ==========================================
+  saveAsTemplate: async (name, description) => {
+    try {
+      const settings = get().settings;
+      await saveUserTemplateAPI(name, description, settings);
+      await get().fetchTemplates();
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to save template:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  deleteTemplate: async (id) => {
+    try {
+      await deleteUserTemplateAPI(id);
+      await get().fetchTemplates();
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to delete template:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
   fetchTemplates: async () => {
     try {
       const templates = await loadTemplates();

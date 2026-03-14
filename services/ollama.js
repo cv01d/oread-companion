@@ -61,7 +61,7 @@ class OllamaService {
       }
 
       // Add generation options if provided
-      if (options.temperature !== undefined || options.topP !== undefined || options.maxTokens !== undefined) {
+      if (options.temperature !== undefined || options.topP !== undefined || options.frequencyPenalty !== undefined || options.maxTokens !== undefined) {
         chatRequest.options = {};
 
         if (options.temperature !== undefined) {
@@ -69,6 +69,9 @@ class OllamaService {
         }
         if (options.topP !== undefined) {
           chatRequest.options.top_p = options.topP;
+        }
+        if (options.frequencyPenalty !== undefined) {
+          chatRequest.options.repeat_penalty = options.frequencyPenalty;
         }
         if (options.maxTokens !== undefined) {
           chatRequest.options.num_predict = options.maxTokens;

@@ -26,7 +26,7 @@ export default function SessionManager() {
   const handleCreateSession = async () => {
     const mode = settings.mode;
     const characterName = mode === 'roleplay'
-      ? settings.roleplay?.singleCharacterRef
+      ? settings.roleplay?.character?.name
       : null;
 
     // Use provided name or generate default based on mode and character

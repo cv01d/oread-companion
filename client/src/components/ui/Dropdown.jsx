@@ -25,7 +25,7 @@ export default function Dropdown({
     >
       <option value="">{placeholder}</option>
       {options.map((option, index) => (
-        <option key={index} value={option.value}>
+        <option key={index} value={option.value} disabled={option.disabled}>
           {option.label}
         </option>
       ))}

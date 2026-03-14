@@ -65,7 +65,9 @@ function buildRoleplayPrompt(settings, isFirstMessage) {
   if (mainCharacter.role) prompt += `ROLE: ${mainCharacter.role}\n`;
   if (mainCharacter.backstory) prompt += `BACKSTORY: ${mainCharacter.backstory}\n`;
   if (mainCharacter.knowledgeSkills) prompt += `KNOWLEDGE/SKILLS: ${mainCharacter.knowledgeSkills}\n`;
-  if (mainCharacter.hobbiesInterests) prompt += `HOBBIES/INTERESTS: ${mainCharacter.hobbiesInterests}\n\n`;
+  if (mainCharacter.hobbiesInterests) prompt += `HOBBIES/INTERESTS: ${mainCharacter.hobbiesInterests}\n`;
+  if (mainCharacter.thingsToAvoid) prompt += `Things They Avoid: ${mainCharacter.thingsToAvoid}\n`;
+  prompt += '\n';
 
   prompt += `PERSONALITY ENGINE (ACTIVE TRAITS):\nApply these logic tracks to all output:\n${traitsText}\n\n`;
 
@@ -87,6 +89,10 @@ function buildRoleplayPrompt(settings, isFirstMessage) {
   const currentContext = userCustomContext || (isFirstMessage ? world.openingScene : null);
   if (currentContext) {
     prompt += `CURRENT CONTEXT (SCENE OR MEMORY):\n${currentContext}\n\n`;
+  }
+
+  if (world.hardRules && world.hardRules.length > 0) {
+    prompt += `HARD RULES:\n${world.hardRules.map(r => `- ${r}`).join('\n')}\n\n`;
   }
 
   prompt += `MODE TOGGLE:\n/chat: Utility Mode | /play: Roleplay Mode`;

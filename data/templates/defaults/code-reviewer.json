@@ -14,8 +14,7 @@
         "hardRules": []
       },
       "characterMode": "single",
-      "singleCharacterRef": "",
-      "multipleCharacterRefs": []
+      "characters": []
     },
     "utility": {
       "assistantIdentity": {
@@ -32,8 +31,15 @@
       "bio": "",
       "skills": "",
       "profession": "",
-      "tastes": { "interests": "", "hobbies": "", "mediaPreferences": "" },
-      "linguisticFilters": { "bannedPhrases": [], "bannedWords": [] },
+      "tastes": {
+        "interests": "",
+        "hobbies": "",
+        "mediaPreferences": ""
+      },
+      "linguisticFilters": {
+        "bannedPhrases": [],
+        "bannedWords": []
+      },
       "boundaries": ""
     },
     "general": {

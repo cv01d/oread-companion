@@ -4,6 +4,8 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
+    exclude: ['node_modules/**', '.claude/**', '**/node_modules/**'],
+    setupFiles: ['./vitest.setup.js'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],

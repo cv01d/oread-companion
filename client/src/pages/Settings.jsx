@@ -33,7 +33,12 @@ export default function Settings() {
   const downloadProgress = useStore((state) => state.downloadProgress);
   const templates = useStore((state) => state.templates);
   const fetchTemplates = useStore((state) => state.fetchTemplates);
+  const saveAsTemplate = useStore((state) => state.saveAsTemplate);
   const [activeTab, setActiveTab] = useState('mode');
+  const [showSaveWorldForm, setShowSaveWorldForm] = useState(false);
+  const [worldName, setWorldName] = useState('');
+  const [worldDescription, setWorldDescription] = useState('');
+  const [isSavingWorld, setIsSavingWorld] = useState(false);
 
   // Re-fetch if initialize() hadn't finished loading templates when this page mounted
   useEffect(() => {
@@ -149,23 +154,20 @@ export default function Settings() {
     }
   };
 
+  const handleSaveWorld = async () => {
+    if (!worldName.trim()) return;
+    setIsSavingWorld(true);
+    const result = await saveAsTemplate(worldName.trim(), worldDescription.trim());
+    setIsSavingWorld(false);
+    if (result.success) {
+      setWorldName('');
+      setWorldDescription('');
+      setShowSaveWorldForm(false);
+    }
+  };
+
   return (
     <div className="settings">
-      {/* Save Status Notification */}
-      {(isSavingSettings || lastSaved) && (
-        <div className="settings__save-notification">
-          {isSavingSettings ? (
-            <span className="settings__save-notification--saving">
-              💾 Saving changes...
-            </span>
-          ) : lastSaved ? (
-            <span className="settings__save-notification--saved">
-              ✓ All changes saved {getLastSavedText()}
-            </span>
-          ) : null}
-        </div>
-      )}
-
       {/* Navigation Tabs */}
       <div className="settings__tabs">
         <button
@@ -212,6 +214,61 @@ export default function Settings() {
         </button>
       </div>
 
+      {/* Action bar: save status left, save world right */}
+      <div className="settings__action-bar">
+        <div className="settings__save-status-area">
+          {isSavingSettings ? (
+            <span className="settings__save-status--saving">Saving changes...</span>
+          ) : lastSaved ? (
+            <span className="settings__save-status--saved">All changes saved {getLastSavedText()}</span>
+          ) : null}
+        </div>
+        <div className="settings__action-bar-right">
+          {!showSaveWorldForm ? (
+            <Button
+              onClick={() => setShowSaveWorldForm(true)}
+              variant="secondary"
+              className="settings__save-world-btn"
+            >
+              Save as World
+            </Button>
+          ) : (
+            <div className="settings__save-world-form">
+              <input
+                type="text"
+                value={worldName}
+                onChange={(e) => setWorldName(e.target.value)}
+                placeholder="World name..."
+                className="settings__save-world-input"
+                maxLength={200}
+                autoFocus
+              />
+              <input
+                type="text"
+                value={worldDescription}
+                onChange={(e) => setWorldDescription(e.target.value)}
+                placeholder="Description (optional)"
+                className="settings__save-world-input"
+                maxLength={1000}
+              />
+              <Button
+                onClick={handleSaveWorld}
+                variant="primary"
+                disabled={!worldName.trim() || isSavingWorld}
+              >
+                {isSavingWorld ? 'Saving...' : 'Save'}
+              </Button>
+              <Button
+                onClick={() => { setShowSaveWorldForm(false); setWorldName(''); setWorldDescription(''); }}
+                variant="secondary"
+              >
+                Cancel
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Tab Content */}
       <div className="settings__content">
         {/* Mode & Templates Tab */}
@@ -229,8 +286,8 @@ export default function Settings() {
             </CollapsibleSection>
 
             <CollapsibleSection
-              title="Select Template"
-              description="Choose a preset template to quickly configure your settings"
+              title="Choose Your World"
+              description="Choose a preset or saved world to quickly configure your settings"
               defaultExpanded={false}
             >
               <TemplateSelector
@@ -289,13 +346,13 @@ export default function Settings() {
               {settings.roleplay.characterMode === 'single' && (
                 <div className="settings__single-character">
                   <CharacterEditor
-                    characterRef={settings.roleplay.singleCharacterRef}
-                    onCharacterRefChange={(newRef) => {
+                    inlineCharacter={settings.roleplay.character}
+                    onCharacterChange={(updatedCharacter) => {
                       setSettings({
                         ...settings,
                         roleplay: {
                           ...settings.roleplay,
-                          singleCharacterRef: newRef
+                          character: updatedCharacter
                         }
                       });
                     }}
@@ -307,13 +364,13 @@ export default function Settings() {
               {settings.roleplay.characterMode === 'multi' && (
                 <div className="settings__multiple-characters">
                   <CharacterList
-                    characterRefs={settings.roleplay.multipleCharacterRefs}
-                    onCharacterRefsChange={(updatedRefs) => {
+                    characters={settings.roleplay.characters || []}
+                    onCharactersChange={(updatedCharacters) => {
                       setSettings({
                         ...settings,
                         roleplay: {
                           ...settings.roleplay,
-                          multipleCharacterRefs: updatedRefs
+                          characters: updatedCharacters
                         }
                       });
                     }}

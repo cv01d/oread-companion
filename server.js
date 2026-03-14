@@ -180,7 +180,7 @@ app.post('/api/models/pull', validate(modelPullSchema), asyncHandler(async (req,
 
 // Chat endpoint with streaming response and RAG support
 app.post('/api/chat', validate(chatSchema), asyncHandler(async (req, res) => {
-  const { model, messages, systemPrompt, temperature, topP, maxTokens, sessionId, settings } = req.body;
+  const { model, messages, systemPrompt, temperature, topP, frequencyPenalty, maxTokens, sessionId, settings } = req.body;
 
   // Set up SSE headers
   res.setHeader('Content-Type', 'text/event-stream');
@@ -221,6 +221,7 @@ app.post('/api/chat', validate(chatSchema), asyncHandler(async (req, res) => {
       systemPrompt: systemPrompt || undefined,
       temperature: temperature !== undefined ? temperature : undefined,
       topP: topP !== undefined ? topP : undefined,
+      frequencyPenalty: frequencyPenalty !== undefined ? frequencyPenalty : undefined,
       maxTokens: maxTokens !== undefined ? maxTokens : undefined
     };
 

@@ -5,15 +5,24 @@ import Button from '../ui/Button';
 
 export default function TemplateSelector({ selectedTemplateId, onSelect }) {
   const templates = useStore((state) => state.templates);
+  const deleteTemplate = useStore((state) => state.deleteTemplate);
   const [previewTemplateId, setPreviewTemplateId] = useState(selectedTemplateId || '');
 
-  // Create dropdown options
+  // Split templates into defaults and user
+  const defaultTemplates = templates.filter(t => !t.isUserTemplate);
+  const userTemplates = templates.filter(t => t.isUserTemplate);
+
+  // Create grouped dropdown options — user worlds first
   const templateOptions = [
     { value: '', label: 'None (Custom Settings)' },
-    ...templates.map(t => ({
-      value: t.id,
-      label: t.name
-    }))
+    ...(userTemplates.length > 0
+      ? [
+          { value: '', label: '── My Worlds ──', disabled: true },
+          ...userTemplates.map(t => ({ value: t.id, label: t.name })),
+          { value: '', label: '── Templates ──', disabled: true },
+        ]
+      : []),
+    ...defaultTemplates.map(t => ({ value: t.id, label: t.name })),
   ];
 
   // Get the currently previewed template
@@ -28,13 +37,15 @@ export default function TemplateSelector({ selectedTemplateId, onSelect }) {
     }
   };
 
+  const handleDelete = async () => {
+    if (!previewTemplate?.isUserTemplate) return;
+    if (!window.confirm(`Delete "${previewTemplate.name}"? This cannot be undone.`)) return;
+    await deleteTemplate(previewTemplate.id);
+    setPreviewTemplateId('');
+  };
+
   return (
     <div className="template-selector">
-      <h3 className="template-selector__title">Choose a Template</h3>
-      <p className="template-selector__description">
-        Start with a preset or customize your own settings
-      </p>
-
       <div className="template-selector__controls">
         <Dropdown
           options={templateOptions}
@@ -48,7 +59,7 @@ export default function TemplateSelector({ selectedTemplateId, onSelect }) {
           variant="primary"
           className="template-selector__apply"
         >
-          Apply Template
+          Apply World
         </Button>
       </div>
 
@@ -60,19 +71,27 @@ export default function TemplateSelector({ selectedTemplateId, onSelect }) {
             <span className="template-selector__preview-badge">
               {previewTemplate.category === 'roleplay' ? 'Roleplay' : 'Utility'}
             </span>
+            {previewTemplate.isUserTemplate && (
+              <span className="template-selector__preview-badge template-selector__preview-badge--user">
+                My World
+              </span>
+            )}
           </h4>
           <p className="template-selector__preview-description">
             {previewTemplate.description}
           </p>
+          {previewTemplate.isUserTemplate && (
+            <Button
+              onClick={handleDelete}
+              variant="danger"
+              className="template-selector__delete"
+            >
+              Delete World
+            </Button>
+          )}
         </div>
       )}
 
-      {/* Currently Applied Template */}
-      {selectedTemplateId && (
-        <div className="template-selector__current">
-          <strong>Currently Applied:</strong> {templates.find(t => t.id === selectedTemplateId)?.name || 'Unknown'}
-        </div>
-      )}
     </div>
   );
 }

@@ -5,6 +5,10 @@ vi.mock('../../client/src/utils/personalitySystemLoader.js', () => ({
   buildPersonalityGuidance: vi.fn(() => '')
 }));
 
+vi.mock('../../client/src/utils/narrativeSystemLoader.js', () => ({
+  getNarrativeStyle: vi.fn(() => ({ frame: 'test frame', format: 'test format', constraint: 'test constraint' }))
+}));
+
 import { buildSystemPrompt, detectModeToggle } from '../../client/src/utils/promptBuilder.js';
 
 const baseSettings = {
@@ -12,8 +16,8 @@ const baseSettings = {
   roleplay: {
     world: { settingLore: '', openingScene: '', narratorVoice: '', hardRules: [] },
     characterMode: 'single',
-    singleCharacterRef: '',
-    multipleCharacterRefs: [],
+    character: null,
+    characters: [],
     _loadedCharacters: []
   },
   utility: {
@@ -150,7 +154,7 @@ describe('buildSystemPrompt – roleplay mode', () => {
     };
     const prompt = buildSystemPrompt(settings, 'roleplay');
     expect(prompt).toContain('Elara');
-    expect(prompt).toContain('MAIN CHARACTER');
+    expect(prompt).toContain('CHARACTER CARD');
   });
 
   it('includes thingsToAvoid in the character section', () => {

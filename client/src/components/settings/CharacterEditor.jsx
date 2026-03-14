@@ -1,11 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import TextField from '../ui/TextField';
 import TextArea from '../ui/TextArea';
 import ImageUpload from '../ui/ImageUpload';
 import MultiSelect from '../ui/MultiSelect';
-import Button from '../ui/Button';
-import { getCharacter, saveCharacter, deleteCharacter as deleteCharacterFile } from '../../utils/characterAPI';
-import { generateCharacterId, characterFileToSettings } from '../../utils/characterConverter';
+import { characterFileToSettings } from '../../utils/characterConverter';
 
 // Personality trait options
 const TRAIT_OPTIONS = {
@@ -44,39 +42,23 @@ const EMPTY_CHARACTER = {
   }
 };
 
-// Debounce timer
-let saveTimer = null;
-
-export default function CharacterEditor({ characterRef, onCharacterRefChange, mode = 'single' }) {
+export default function CharacterEditor({ inlineCharacter, onCharacterChange, mode = 'single' }) {
   const [character, setCharacter] = useState(EMPTY_CHARACTER);
-  const [isLoading, setIsLoading] = useState(false);
+  const isLocalEdit = useRef(false);
 
-  // Load character from file when characterRef changes
+  // Load character from inline template data (only on external changes, not our own edits)
   useEffect(() => {
-    async function loadCharacterData() {
-      if (!characterRef) {
-        setCharacter(EMPTY_CHARACTER);
-        return;
-      }
-
-      setIsLoading(true);
-      try {
-        const charFile = await getCharacter(characterRef);
-        if (charFile) {
-          const charData = characterFileToSettings(charFile);
-          setCharacter(charData);
-        } else {
-          setCharacter({...EMPTY_CHARACTER, name: characterRef});
-        }
-      } catch (error) {
-        setCharacter(EMPTY_CHARACTER);
-      } finally {
-        setIsLoading(false);
-      }
+    if (isLocalEdit.current) {
+      isLocalEdit.current = false;
+      return;
     }
-
-    loadCharacterData();
-  }, [characterRef]);
+    if (inlineCharacter) {
+      const charData = characterFileToSettings(inlineCharacter);
+      setCharacter(charData);
+    } else {
+      setCharacter(EMPTY_CHARACTER);
+    }
+  }, [inlineCharacter]);
 
   const handleFieldChange = (field, value) => {
     const updatedCharacter = {
@@ -84,11 +66,9 @@ export default function CharacterEditor({ characterRef, onCharacterRefChange, mo
       [field]: value
     };
 
-    // Update local state immediately
     setCharacter(updatedCharacter);
-
-    // Save to JSON file (debounced)
-    saveToCharacterFile(updatedCharacter);
+    isLocalEdit.current = true;
+    onCharacterChange(updatedCharacter);
   };
 
   const handleTraitChange = (category, values) => {
@@ -100,41 +80,10 @@ export default function CharacterEditor({ characterRef, onCharacterRefChange, mo
       }
     };
 
-    // Update local state immediately
     setCharacter(updatedCharacter);
-
-    // Save to JSON file (debounced)
-    saveToCharacterFile(updatedCharacter);
+    isLocalEdit.current = true;
+    onCharacterChange(updatedCharacter);
   };
-
-  const saveToCharacterFile = (characterData) => {
-    // Clear existing timer
-    if (saveTimer) {
-      clearTimeout(saveTimer);
-    }
-
-    // Set new timer (debounce 1 second)
-    saveTimer = setTimeout(async () => {
-      if (characterData.name) {
-        const characterId = generateCharacterId(characterData.name);
-
-        // If name changed, update the reference
-        if (characterId !== characterRef) {
-          onCharacterRefChange(characterId);
-        }
-
-        await saveCharacter(characterId, characterData);
-      }
-    }, 1000);
-  };
-
-  if (isLoading) {
-    return (
-      <div className="character-editor">
-        <p>Loading character...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="character-editor">

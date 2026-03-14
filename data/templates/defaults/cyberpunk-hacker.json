@@ -18,8 +18,6 @@
         ]
       },
       "characterMode": "single",
-      "singleCharacterRef": "nova",
-      "multipleCharacterRefs": [],
       "character": {
         "name": "Nova",
         "age": "23",
@@ -33,27 +31,54 @@
         "inventory": "",
         "traits": {
           "emotionalExpression": [],
-          "socialEnergy": ["Independent", "Takes Initiative"],
-          "thinkingStyle": ["Creative", "Practical"],
-          "humorPersonality": ["Sarcastic", "Playful"],
-          "coreValues": ["Authentic"],
+          "socialEnergy": [
+            "Independent",
+            "Takes Initiative"
+          ],
+          "thinkingStyle": [
+            "Creative",
+            "Practical"
+          ],
+          "humorPersonality": [
+            "Sarcastic",
+            "Playful"
+          ],
+          "coreValues": [
+            "Authentic"
+          ],
           "howTheyCare": [],
-          "energyPresence": ["Energetic"],
+          "energyPresence": [
+            "Energetic"
+          ],
           "lifestyleInterests": []
         }
-      }
+      },
+      "characters": []
     },
     "utility": {
-      "assistantIdentity": { "persona": "", "communicationStyle": "" },
-      "guardrails": { "negativeConstraints": "", "formattingPreferences": "" }
+      "assistantIdentity": {
+        "persona": "",
+        "communicationStyle": ""
+      },
+      "guardrails": {
+        "negativeConstraints": "",
+        "formattingPreferences": ""
+      }
     },
     "userPersona": {
       "name": "",
       "bio": "",
       "skills": "",
       "profession": "",
-      "tastes": { "interests": "", "hobbies": "", "mediaPreferences": "" },
-      "linguisticFilters": { "bannedPhrases": [], "bannedWords": [] },
+      "tastes": {
+        "interests": "",
+        "hobbies": "",
+        "mediaPreferences": ""
+      },
+      "linguisticFilters": {
+        "bannedPhrases": [],
+        "bannedWords": []
+      },
       "boundaries": ""
     },
     "general": {

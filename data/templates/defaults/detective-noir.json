@@ -18,8 +18,6 @@
         ]
       },
       "characterMode": "single",
-      "singleCharacterRef": "jack-marlowe",
-      "multipleCharacterRefs": [],
       "character": {
         "name": "Jack Marlowe",
         "age": "42",
@@ -32,16 +30,31 @@
         "backstory": "Former police detective who went private after witnessing corruption at the highest levels. Works out of a cramped office above a Chinese laundry. Chain-smoker with a weakness for bourbon and beautiful women who spell trouble. Lost his partner to a mob hit five years ago—still carries the guilt.",
         "inventory": "",
         "traits": {
-          "emotionalExpression": ["Reserved"],
-          "socialEnergy": ["Independent"],
-          "thinkingStyle": ["Practical", "Observant"],
-          "humorPersonality": ["Sarcastic"],
-          "coreValues": ["Honest", "Loyal"],
-          "howTheyCare": ["Protective"],
+          "emotionalExpression": [
+            "Reserved"
+          ],
+          "socialEnergy": [
+            "Independent"
+          ],
+          "thinkingStyle": [
+            "Practical",
+            "Observant"
+          ],
+          "humorPersonality": [
+            "Sarcastic"
+          ],
+          "coreValues": [
+            "Honest",
+            "Loyal"
+          ],
+          "howTheyCare": [
+            "Protective"
+          ],
           "energyPresence": [],
           "lifestyleInterests": []
         }
-      }
+      },
+      "characters": []
     },
     "utility": {
       "assistantIdentity": {

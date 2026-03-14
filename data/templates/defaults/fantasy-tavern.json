@@ -17,8 +17,6 @@
         ]
       },
       "characterMode": "single",
-      "singleCharacterRef": "elara",
-      "multipleCharacterRefs": [],
       "character": {
         "name": "Elara",
         "age": "28",
@@ -31,16 +29,36 @@
         "backstory": "Inherited the tavern from her father five years ago. Grew up listening to tales of adventure and has developed a talent for storytelling herself. Dreams of adventure but feels tied to the tavern and its regular patrons.",
         "inventory": "",
         "traits": {
-          "emotionalExpression": ["Warm"],
-          "socialEnergy": ["Friendly", "Supportive"],
-          "thinkingStyle": ["Wise", "Observant"],
-          "humorPersonality": ["Witty", "Playful"],
-          "coreValues": ["Kind", "Honest"],
-          "howTheyCare": ["Kind", "Encouraging"],
+          "emotionalExpression": [
+            "Warm"
+          ],
+          "socialEnergy": [
+            "Friendly",
+            "Supportive"
+          ],
+          "thinkingStyle": [
+            "Wise",
+            "Observant"
+          ],
+          "humorPersonality": [
+            "Witty",
+            "Playful"
+          ],
+          "coreValues": [
+            "Kind",
+            "Honest"
+          ],
+          "howTheyCare": [
+            "Kind",
+            "Encouraging"
+          ],
           "energyPresence": [],
-          "lifestyleInterests": ["Social"]
+          "lifestyleInterests": [
+            "Social"
+          ]
         }
-      }
+      },
+      "characters": []
     },
     "utility": {
       "assistantIdentity": {

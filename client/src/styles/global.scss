@@ -2014,17 +2014,27 @@ body {
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
 
-  &__title {
-    font-size: $font-size-xl;
-    font-weight: 400;
-    color: $color-text-primary;
-    margin-bottom: $spacing-xs;
-    letter-spacing: 1px;
+  &__action-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: $spacing-xl;
+    padding-bottom: $spacing-lg;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    min-height: 36px;
   }
 
-  &__subtitle {
+  &__action-bar-right {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    flex-shrink: 0;
+  }
+
+  &__save-status-area {
     font-size: $font-size-sm;
-    color: $color-text-muted;
+    font-style: italic;
+    min-width: 0;
   }
 
   &__save-status {
@@ -2040,6 +2050,50 @@ body {
     &--saved {
       color: #b0b0b0;
     }
+  }
+
+  &__save-world-form {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  &__save-world-input {
+    padding: $spacing-sm $spacing-md;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: $radius-sm;
+    color: $color-text-primary;
+    font-size: $font-size-sm;
+    font-family: 'Montserrat', sans-serif;
+    width: 180px;
+    transition: border-color 0.2s ease;
+
+    &::placeholder {
+      color: $color-text-muted;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: $color-primary;
+    }
+  }
+
+  &__save-world-btn {
+    white-space: nowrap;
+  }
+
+  &__title {
+    font-size: $font-size-xl;
+    font-weight: 400;
+    color: $color-text-primary;
+    margin-bottom: $spacing-xs;
+    letter-spacing: 1px;
+  }
+
+  &__subtitle {
+    font-size: $font-size-sm;
+    color: $color-text-muted;
   }
 
   &__actions {

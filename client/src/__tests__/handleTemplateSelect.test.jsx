@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, act } from '@testing-library/react';
 
@@ -26,11 +27,6 @@ vi.mock('../utils/settingsImportExport', () => ({
 }));
 vi.mock('../data/defaultSettings', () => ({ DEFAULT_SETTINGS: {} }));
 
-// The module under test uses copyDefaultCharacterToUser
-vi.mock('../utils/characterAPI', () => ({
-  copyDefaultCharacterToUser: vi.fn(),
-}));
-
 // Capture the onSelect callback from TemplateSelector
 let capturedOnSelect = null;
 vi.mock('../components/settings/TemplateSelector', () => ({
@@ -44,7 +40,7 @@ vi.mock('../components/settings/TemplateSelector', () => ({
 const mockSetSettings = vi.fn();
 const mockSettings = {
   mode: 'normal',
-  roleplay: { characterMode: 'single', singleCharacterRef: null, multipleCharacterRefs: [] },
+  roleplay: { characterMode: 'single', character: null, characters: [] },
   utility: {},
   userPersona: {},
   general: {},
@@ -72,7 +68,6 @@ vi.mock('../store/useStore', () => ({
   }),
 }));
 
-import { copyDefaultCharacterToUser } from '../utils/characterAPI';
 import Settings from '../pages/Settings';
 
 describe('handleTemplateSelect', () => {
@@ -81,9 +76,7 @@ describe('handleTemplateSelect', () => {
     capturedOnSelect = null;
   });
 
-  it('calls copyDefaultCharacterToUser and setSettings when applying a roleplay template with a singleCharacterRef', async () => {
-    copyDefaultCharacterToUser.mockResolvedValue({ name: 'Echo' });
-
+  it('applies full template settings including inline character when selecting a roleplay template', async () => {
     render(<Settings />);
 
     const roleplayTemplate = {
@@ -91,9 +84,9 @@ describe('handleTemplateSelect', () => {
       settings: {
         mode: 'roleplay',
         roleplay: {
-          singleCharacterRef: 'echo',
           characterMode: 'single',
-          multipleCharacterRefs: [],
+          character: { name: 'Echo', role: 'Companion' },
+          characters: [],
         },
         meta: { templateId: 'echo-roleplay', lastModified: null, version: '1.0' },
       },
@@ -103,23 +96,21 @@ describe('handleTemplateSelect', () => {
       await capturedOnSelect(roleplayTemplate);
     });
 
-    expect(copyDefaultCharacterToUser).toHaveBeenCalledTimes(1);
-    expect(copyDefaultCharacterToUser).toHaveBeenCalledWith('echo');
-
     expect(mockSetSettings).toHaveBeenCalledTimes(1);
     const calledWith = mockSetSettings.mock.calls[0][0];
     expect(calledWith.meta.templateId).toBe('echo-roleplay');
     expect(calledWith.mode).toBe('roleplay');
+    expect(calledWith.roleplay.character.name).toBe('Echo');
   });
 
-  it('does NOT call copyDefaultCharacterToUser for a non-roleplay template, but does call setSettings', async () => {
+  it('applies template settings for a non-roleplay template', async () => {
     render(<Settings />);
 
     const normalTemplate = {
       id: 'utility-default',
       settings: {
         mode: 'normal',
-        roleplay: { singleCharacterRef: null, characterMode: 'single', multipleCharacterRefs: [] },
+        roleplay: { characterMode: 'single', character: null, characters: [] },
         meta: { templateId: 'utility-default', lastModified: null, version: '1.0' },
       },
     };
@@ -128,7 +119,6 @@ describe('handleTemplateSelect', () => {
       await capturedOnSelect(normalTemplate);
     });
 
-    expect(copyDefaultCharacterToUser).not.toHaveBeenCalled();
     expect(mockSetSettings).toHaveBeenCalledTimes(1);
     const calledWith = mockSetSettings.mock.calls[0][0];
     expect(calledWith.meta.templateId).toBe('utility-default');
@@ -141,7 +131,6 @@ describe('handleTemplateSelect', () => {
       await capturedOnSelect(null);
     });
 
-    expect(copyDefaultCharacterToUser).not.toHaveBeenCalled();
     expect(mockSetSettings).toHaveBeenCalledTimes(1);
     const calledWith = mockSetSettings.mock.calls[0][0];
     expect(calledWith.meta.templateId).toBeNull();

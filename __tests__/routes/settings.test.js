@@ -3,7 +3,7 @@ import express from 'express';
 import request from 'supertest';
 
 vi.mock('../../controllers/templateController.js', () => ({
-  getAllDefaultTemplates: vi.fn((req, res) =>
+  getAllTemplates: vi.fn((req, res) =>
     res.json({ success: true, templates: [] })
   ),
   getDefaultTemplate: vi.fn((req, res) =>
@@ -17,6 +17,12 @@ vi.mock('../../controllers/templateController.js', () => ({
   ),
   deleteActiveTemplate: vi.fn((req, res) =>
     res.json({ success: true, settings: {} })
+  ),
+  saveUserTemplate: vi.fn((req, res) =>
+    res.json({ success: true, template: { id: 'test', name: req.body.name } })
+  ),
+  deleteUserTemplate: vi.fn((req, res) =>
+    res.json({ success: true })
   ),
 }));
 
@@ -107,7 +113,7 @@ describe('GET /', () => {
   it('returns 200 and calls getAllDefaultTemplates', async () => {
     const res = await request(createApp()).get('/').expect(200);
     expect(res.body.success).toBe(true);
-    expect(controller.getAllDefaultTemplates).toHaveBeenCalledOnce();
+    expect(controller.getAllTemplates).toHaveBeenCalledOnce();
   });
 });
 

@@ -46,7 +46,8 @@ export default function GeneralSettingsPanel({ settings, onChange, models = [] }
             Temperature ({general.temperature})
           </label>
           <p className="general-settings-panel__hint">
-            Controls randomness. Lower = more focused, Higher = more creative (0.0 - 2.0)
+            How wild or predictable your character acts. Low values make them speak in safe, expected ways.
+            High values make them more surprising, playful, and unpredictable — but too high can make them incoherent.
           </p>
           <input
             type="range"
@@ -64,7 +65,9 @@ export default function GeneralSettingsPanel({ settings, onChange, models = [] }
             Top P ({general.topP})
           </label>
           <p className="general-settings-panel__hint">
-            Nucleus sampling threshold. Controls diversity of output (0.0 - 1.0)
+            How broad your character's vocabulary and word choices are. Lower values make them stick to the most
+            obvious words and phrases. Higher values let them pick from a wider range of expressions, giving
+            responses more variety and flavor.
           </p>
           <input
             type="range"
@@ -78,9 +81,30 @@ export default function GeneralSettingsPanel({ settings, onChange, models = [] }
         </div>
 
         <div className="general-settings-panel__field">
+          <label className="general-settings-panel__label">
+            Frequency Penalty ({general.frequencyPenalty})
+          </label>
+          <p className="general-settings-panel__hint">
+            How much your character avoids repeating themselves. At 1.0 there is no penalty.
+            Higher values discourage repeated words and phrases, making dialogue feel fresher.
+            Too high and they may start avoiding common words unnaturally.
+          </p>
+          <input
+            type="range"
+            min="0"
+            max="2"
+            step="0.1"
+            value={general.frequencyPenalty}
+            onChange={(e) => handleFieldChange('frequencyPenalty', parseFloat(e.target.value))}
+            className="general-settings-panel__slider"
+          />
+        </div>
+
+        <div className="general-settings-panel__field">
           <label className="general-settings-panel__label">Max Tokens</label>
           <p className="general-settings-panel__hint">
-            Maximum length of generated responses (in tokens)
+            How long your character's responses can be. Each token is roughly a word or part of a word.
+            Higher values allow longer, more detailed replies. Lower values keep responses short and snappy.
           </p>
           <TextField
             type="number"

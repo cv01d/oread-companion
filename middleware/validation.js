@@ -7,9 +7,11 @@ import Joi from 'joi';
 // Chat message validation
 export const chatSchema = Joi.object({
   model: Joi.string()
+    .pattern(/^[^\s;&|`$<>\\]+$/)
     .max(200)
     .required()
     .messages({
+      'string.pattern.base': 'Model name must not contain shell special characters',
       'any.required': 'Model is required'
     }),
 
@@ -34,6 +36,7 @@ export const chatSchema = Joi.object({
 
   temperature: Joi.number().min(0).max(2).allow(null).optional(),
   topP: Joi.number().min(0).max(1).allow(null).optional(),
+  frequencyPenalty: Joi.number().min(0).max(2).allow(null).optional(),
   maxTokens: Joi.number().min(1).max(100000).allow(null).optional(),
 
   sessionId: Joi.string()
@@ -85,6 +88,13 @@ export const characterIdSchema = Joi.string()
     'string.pattern.base': 'Character ID must contain only alphanumeric characters, hyphens, and underscores'
   });
 
+// User template validation
+export const userTemplateSchema = Joi.object({
+  name: Joi.string().max(200).required(),
+  description: Joi.string().max(1000).allow('').optional(),
+  settings: Joi.object().required()
+});
+
 // Settings validation
 export const settingsSchema = Joi.object({
   settings: Joi.object({
@@ -93,8 +103,8 @@ export const settingsSchema = Joi.object({
     roleplay: Joi.object({
       world: Joi.object().optional(),
       characterMode: Joi.string().valid('single', 'multi').optional(),
-      singleCharacterRef: Joi.string().max(100).allow('').optional(),
-      multipleCharacterRefs: Joi.array().items(Joi.string().max(100)).optional()
+      character: Joi.object().allow(null).optional(),
+      characters: Joi.array().items(Joi.object()).optional()
     }).optional(),
 
     utility: Joi.object().optional(),
@@ -107,6 +117,7 @@ export const settingsSchema = Joi.object({
       memory: Joi.boolean().optional(),
       temperature: Joi.number().min(0).max(2).optional(),
       topP: Joi.number().min(0).max(1).optional(),
+      frequencyPenalty: Joi.number().min(0).max(2).optional(),
       maxTokens: Joi.number().min(1).max(100000).optional()
     }).optional(),
 
@@ -270,6 +281,7 @@ export default {
   sessionUpdateSchema,
   characterIdSchema,
   settingsSchema,
+  userTemplateSchema,
   embedSchema,
   memorySearchSchema,
   vectorSearchSchema

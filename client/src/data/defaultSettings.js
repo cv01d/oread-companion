@@ -11,9 +11,8 @@ export const DEFAULT_SETTINGS = {
       hardRules: []
     },
     characterMode: 'single', // 'single' or 'multi'
-    singleCharacterRef: 'echo', // Reference to character file ID
-    multipleCharacterRefs: [], // Array of character file IDs
-    character: null // Inline character data (from template)
+    character: null, // Inline character data (single mode)
+    characters: [] // Inline character data array (multi mode)
   },
 
   utility: {
@@ -52,6 +51,7 @@ export const DEFAULT_SETTINGS = {
     memory: true,
     temperature: 0.8,
     topP: 0.9,
+    frequencyPenalty: 1.1,
     maxTokens: 2048
   },
 
