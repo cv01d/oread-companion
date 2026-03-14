@@ -445,6 +445,10 @@ const useStore = create((set, get) => ({
           currentSession: data.session
         });
         //console.log('✅ Session created:', data.session.id);
+
+        // Refresh session list immediately after creation
+        await get().loadSessions();
+
         return data.session;
       }
     } catch (error) {
@@ -504,13 +508,15 @@ const useStore = create((set, get) => ({
 
       const data = await response.json();
       if (data.success) {
-        // Remove from sessions list
+        // Clear current session if it was deleted
         set((state) => ({
-          chatSessions: state.chatSessions.filter(s => s.id !== sessionId),
           currentSessionId: state.currentSessionId === sessionId ? null : state.currentSessionId,
           currentSession: state.currentSessionId === sessionId ? null : state.currentSession
         }));
         //console.log('✅ Session deleted:', sessionId);
+
+        // Refresh session list immediately after deletion
+        await get().loadSessions();
       }
     } catch (error) {
       //console.error('Failed to delete session:', error);

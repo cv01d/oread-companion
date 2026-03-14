@@ -13,6 +13,9 @@ export default function ChatPage() {
   // Ref to track if we've already attempted to create a session
   const sessionCreationAttempted = useRef(false);
 
+  // Ref to track the last loaded session ID
+  const lastLoadedSessionId = useRef(null);
+
   // Get state and actions from Zustand store
   const messages = useStore((state) => state.messages);
   const selectedModel = useStore((state) => state.selectedModel);
@@ -21,6 +24,17 @@ export default function ChatPage() {
   const settings = useStore((state) => state.settings);
   const currentSessionId = useStore((state) => state.currentSessionId);
   const createSession = useStore((state) => state.createSession);
+  const loadMessageHistory = useStore((state) => state.loadMessageHistory);
+
+  // Load messages when session changes
+  useEffect(() => {
+    // If session changed and we have a session ID, reload messages
+    if (currentSessionId && currentSessionId !== lastLoadedSessionId.current) {
+      console.log(`📝 ChatPage: Session changed to ${currentSessionId}, reloading messages...`);
+      lastLoadedSessionId.current = currentSessionId;
+      loadMessageHistory(currentSessionId);
+    }
+  }, [currentSessionId, loadMessageHistory]);
 
   // Auto-create session on first message if none exists
   useEffect(() => {
