@@ -13,27 +13,8 @@ export const DEFAULT_SETTINGS = {
       turnLogic: ''
     },
     characterMode: 'single', // 'single' or 'multi'
-    singleCharacter: {
-      identity: {
-        name: '',
-        age: '',
-        gender: '',
-        species: '',
-        profession: ''
-      },
-      core: {
-        personality: '',
-        backstory: '',
-        knowledge: ''
-      },
-      dynamics: {
-        relationshipToUser: '',
-        currentLocation: ''
-      },
-      vocalProfile: '',
-      avatarImage: ''
-    },
-    multipleCharacters: []
+    singleCharacterRef: 'echo', // Reference to character file ID
+    multipleCharacterRefs: [] // Array of character file IDs
   },
 
   utility: {

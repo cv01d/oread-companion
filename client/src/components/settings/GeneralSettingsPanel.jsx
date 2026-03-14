@@ -27,14 +27,14 @@ export default function GeneralSettingsPanel({ settings, onChange, models = [] }
       <div className="general-settings-panel__section">
         <div className="general-settings-panel__field">
           <label className="general-settings-panel__label">Default Model</label>
+          <p className="general-settings-panel__hint">
+            The model to use by default. Leave empty to use currently selected model.
+          </p>
           <Dropdown
             options={modelOptions}
             value={general.selectedModel || ''}
             onChange={(value) => handleFieldChange('selectedModel', value || null)}
           />
-          <p className="general-settings-panel__hint">
-            The model to use by default. Leave empty to use currently selected model.
-          </p>
         </div>
       </div>
 
@@ -45,6 +45,9 @@ export default function GeneralSettingsPanel({ settings, onChange, models = [] }
           <label className="general-settings-panel__label">
             Temperature ({general.temperature})
           </label>
+          <p className="general-settings-panel__hint">
+            Controls randomness. Lower = more focused, Higher = more creative (0.0 - 2.0)
+          </p>
           <input
             type="range"
             min="0"
@@ -54,15 +57,15 @@ export default function GeneralSettingsPanel({ settings, onChange, models = [] }
             onChange={(e) => handleFieldChange('temperature', parseFloat(e.target.value))}
             className="general-settings-panel__slider"
           />
-          <p className="general-settings-panel__hint">
-            Controls randomness. Lower = more focused, Higher = more creative (0.0 - 2.0)
-          </p>
         </div>
 
         <div className="general-settings-panel__field">
           <label className="general-settings-panel__label">
             Top P ({general.topP})
           </label>
+          <p className="general-settings-panel__hint">
+            Nucleus sampling threshold. Controls diversity of output (0.0 - 1.0)
+          </p>
           <input
             type="range"
             min="0"
@@ -72,22 +75,19 @@ export default function GeneralSettingsPanel({ settings, onChange, models = [] }
             onChange={(e) => handleFieldChange('topP', parseFloat(e.target.value))}
             className="general-settings-panel__slider"
           />
-          <p className="general-settings-panel__hint">
-            Nucleus sampling threshold. Controls diversity of output (0.0 - 1.0)
-          </p>
         </div>
 
         <div className="general-settings-panel__field">
           <label className="general-settings-panel__label">Max Tokens</label>
+          <p className="general-settings-panel__hint">
+            Maximum length of generated responses (in tokens)
+          </p>
           <TextField
             type="number"
             value={general.maxTokens.toString()}
             onChange={(value) => handleFieldChange('maxTokens', parseInt(value) || 2048)}
             placeholder="2048"
           />
-          <p className="general-settings-panel__hint">
-            Maximum length of generated responses (in tokens)
-          </p>
         </div>
       </div>
 

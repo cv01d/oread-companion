@@ -5,7 +5,9 @@ import ModelDownloader from '../components/model/ModelDownloader';
 import TemplateSelector from '../components/settings/TemplateSelector';
 import ModeSelector from '../components/settings/ModeSelector';
 import SettingsSection from '../components/settings/SettingsSection';
+import CollapsibleSection from '../components/settings/CollapsibleSection';
 import WorldSettingsPanel from '../components/settings/WorldSettingsPanel';
+import NarrativeSettingsPanel from '../components/settings/NarrativeSettingsPanel';
 import CharacterEditor from '../components/settings/CharacterEditor';
 import CharacterList from '../components/settings/CharacterList';
 import UtilitySettingsPanel from '../components/settings/UtilitySettingsPanel';
@@ -17,6 +19,7 @@ import Dropdown from '../components/ui/Dropdown';
 import { TEMPLATES } from '../data/templates';
 import { exportSettings, importSettings, copySettingsToClipboard } from '../utils/settingsImportExport';
 import { DEFAULT_SETTINGS } from '../data/defaultSettings';
+import { copyDefaultCharacterToUser } from '../utils/characterAPI';
 
 export default function Settings() {
   // Get state and actions from Zustand store
@@ -31,7 +34,7 @@ export default function Settings() {
   const downloadModel = useStore((state) => state.downloadModel);
   const isDownloading = useStore((state) => state.isDownloading);
   const downloadProgress = useStore((state) => state.downloadProgress);
-  const [activeTab, setActiveTab] = useState('mode'); // 'mode', 'roleplay', 'utility', 'persona', 'general', 'models', 'sessions'
+  const [activeTab, setActiveTab] = useState('mode'); // 'mode', 'roleplay', 'utility', 'persona', 'general', 'sessions', 'integrations'
 
   // Format last saved time
   const getLastSavedText = () => {
@@ -45,9 +48,16 @@ export default function Settings() {
   };
 
   // Handle template selection
-  const handleTemplateSelect = (template) => {
+  const handleTemplateSelect = async (template) => {
     if (template) {
-      // Template is the full template object
+      // Copy default character to user folder if this is a roleplay template
+      if (template.settings.mode === 'roleplay' && template.settings.roleplay.singleCharacterRef) {
+        const characterId = template.settings.roleplay.singleCharacterRef;
+        console.log(`📋 Copying default character "${characterId}" to user folder...`);
+        await copyDefaultCharacterToUser(characterId);
+      }
+
+      // Apply template settings
       setSettings({
         ...template.settings,
         meta: {
@@ -143,46 +153,20 @@ export default function Settings() {
 
   return (
     <div className="settings">
-      <div className="settings__header">
-        <div>
-          <h1 className="settings__title">Settings</h1>
-          <p className="settings__subtitle">
-            {isSavingSettings ? (
-              <span className="settings__save-status settings__save-status--saving">
-                💾 Saving changes...
-              </span>
-            ) : lastSaved ? (
-              <span className="settings__save-status settings__save-status--saved">
-                All changes saved {getLastSavedText()}
-              </span>
-            ) : (
-              <span className="settings__save-status">
-                Changes are saved automatically
-              </span>
-            )}
-          </p>
+      {/* Save Status Notification */}
+      {(isSavingSettings || lastSaved) && (
+        <div className="settings__save-notification">
+          {isSavingSettings ? (
+            <span className="settings__save-notification--saving">
+              💾 Saving changes...
+            </span>
+          ) : lastSaved ? (
+            <span className="settings__save-notification--saved">
+              ✓ All changes saved {getLastSavedText()}
+            </span>
+          ) : null}
         </div>
-        <div className="settings__actions">
-          <Button onClick={handleExport} variant="secondary">
-            Export Settings
-          </Button>
-          <label className="btn btn--secondary">
-            Import Settings
-            <input
-              type="file"
-              accept=".json"
-              onChange={handleImport}
-              style={{ display: 'none' }}
-            />
-          </label>
-          <Button onClick={handleCopyToClipboard} variant="secondary">
-            Copy to Clipboard
-          </Button>
-          <Button onClick={handleReset} variant="secondary">
-            Reset to Defaults
-          </Button>
-        </div>
-      </div>
+      )}
 
       {/* Navigation Tabs */}
       <div className="settings__tabs">
@@ -190,43 +174,43 @@ export default function Settings() {
           className={`settings__tab ${activeTab === 'mode' ? 'settings__tab--active' : ''}`}
           onClick={() => setActiveTab('mode')}
         >
-          Mode & Templates
+          Mode
         </button>
         <button
           className={`settings__tab ${activeTab === 'roleplay' ? 'settings__tab--active' : ''}`}
           onClick={() => setActiveTab('roleplay')}
         >
-          Roleplay Settings
+          Roleplay Mode
         </button>
         <button
           className={`settings__tab ${activeTab === 'utility' ? 'settings__tab--active' : ''}`}
           onClick={() => setActiveTab('utility')}
         >
-          Utility Settings
+         Assistant Mode
         </button>
         <button
           className={`settings__tab ${activeTab === 'persona' ? 'settings__tab--active' : ''}`}
           onClick={() => setActiveTab('persona')}
         >
-          User Persona
+        You / User
         </button>
         <button
           className={`settings__tab ${activeTab === 'general' ? 'settings__tab--active' : ''}`}
           onClick={() => setActiveTab('general')}
         >
-          General
-        </button>
-        <button
-          className={`settings__tab ${activeTab === 'models' ? 'settings__tab--active' : ''}`}
-          onClick={() => setActiveTab('models')}
-        >
-          Models
+          Model
         </button>
         <button
           className={`settings__tab ${activeTab === 'sessions' ? 'settings__tab--active' : ''}`}
           onClick={() => setActiveTab('sessions')}
         >
           Sessions
+        </button>
+        <button
+          className={`settings__tab ${activeTab === 'integrations' ? 'settings__tab--active' : ''}`}
+          onClick={() => setActiveTab('integrations')}
+        >
+          Integrations
         </button>
       </div>
 
@@ -235,44 +219,59 @@ export default function Settings() {
         {/* Mode & Templates Tab */}
         {activeTab === 'mode' && (
           <div className="settings__tab-content">
-            <SettingsSection
-              title="Select Template"
-              description="Choose a preset template to quickly configure your settings"
-            >
-              <TemplateSelector
-                selectedTemplateId={settings.meta.templateId}
-                onSelect={handleTemplateSelect}
-              />
-            </SettingsSection>
-
-            <SettingsSection
+            <CollapsibleSection
               title="Mode Selection"
               description="Choose between Roleplay mode (character-based interaction) or Normal/Utility mode (standard assistant)"
+              defaultExpanded={true}
             >
               <ModeSelector
                 currentMode={settings.mode}
                 onChange={handleModeChange}
               />
-            </SettingsSection>
+            </CollapsibleSection>
+
+            <CollapsibleSection
+              title="Select Template"
+              description="Choose a preset template to quickly configure your settings"
+              defaultExpanded={false}
+            >
+              <TemplateSelector
+                selectedTemplateId={settings.meta.templateId}
+                onSelect={handleTemplateSelect}
+              />
+            </CollapsibleSection>
           </div>
         )}
 
         {/* Roleplay Settings Tab */}
         {activeTab === 'roleplay' && (
           <div className="settings__tab-content">
-            <SettingsSection
-              title="World & Narrative Settings"
-              description="Configure the world, setting, and narrative style for roleplay"
+            <CollapsibleSection
+              title="World Settings"
+              description="Configure the world and setting for roleplay"
+              defaultExpanded={false}
             >
               <WorldSettingsPanel
                 settings={settings}
                 onChange={setSettings}
               />
-            </SettingsSection>
+            </CollapsibleSection>
 
-            <SettingsSection
+            <CollapsibleSection
+              title="Narrative Settings"
+              description="Configure narrative style, pacing, and rules"
+              defaultExpanded={false}
+            >
+              <NarrativeSettingsPanel
+                settings={settings}
+                onChange={setSettings}
+              />
+            </CollapsibleSection>
+
+            <CollapsibleSection
               title="Character Configuration"
               description="Configure characters for roleplay mode"
+              defaultExpanded={false}
             >
               <div className="settings__character-mode">
                 <label className="settings__label">Character Mode</label>
@@ -292,13 +291,13 @@ export default function Settings() {
               {settings.roleplay.characterMode === 'single' && (
                 <div className="settings__single-character">
                   <CharacterEditor
-                    character={settings.roleplay.singleCharacter}
-                    onChange={(updatedCharacter) => {
+                    characterRef={settings.roleplay.singleCharacterRef}
+                    onCharacterRefChange={(newRef) => {
                       setSettings({
                         ...settings,
                         roleplay: {
                           ...settings.roleplay,
-                          singleCharacter: updatedCharacter
+                          singleCharacterRef: newRef
                         }
                       });
                     }}
@@ -310,75 +309,74 @@ export default function Settings() {
               {settings.roleplay.characterMode === 'multi' && (
                 <div className="settings__multiple-characters">
                   <CharacterList
-                    characters={settings.roleplay.multipleCharacters}
-                    onChange={(updatedCharacters) => {
+                    characterRefs={settings.roleplay.multipleCharacterRefs}
+                    onCharacterRefsChange={(updatedRefs) => {
                       setSettings({
                         ...settings,
                         roleplay: {
                           ...settings.roleplay,
-                          multipleCharacters: updatedCharacters
+                          multipleCharacterRefs: updatedRefs
                         }
                       });
                     }}
                   />
                 </div>
               )}
-            </SettingsSection>
+            </CollapsibleSection>
           </div>
         )}
 
         {/* Utility Settings Tab */}
         {activeTab === 'utility' && (
           <div className="settings__tab-content">
-            <SettingsSection
-              title="Utility/Normal Mode Configuration"
+            <CollapsibleSection
+              title="Assistant Mode"
               description="Configure how the assistant behaves in non-roleplay mode"
+              defaultExpanded={true}
             >
               <UtilitySettingsPanel
                 settings={settings}
                 onChange={setSettings}
               />
-            </SettingsSection>
+            </CollapsibleSection>
           </div>
         )}
 
         {/* User Persona Tab */}
         {activeTab === 'persona' && (
           <div className="settings__tab-content">
-            <SettingsSection
+            <CollapsibleSection
               title="User Persona & Preferences"
               description="Help the AI understand you better across all modes"
+              defaultExpanded={true}
             >
               <UserPersonaPanel
                 settings={settings}
                 onChange={setSettings}
               />
-            </SettingsSection>
+            </CollapsibleSection>
           </div>
         )}
 
         {/* General Tab */}
         {activeTab === 'general' && (
           <div className="settings__tab-content">
-            <SettingsSection
-              title="General Settings"
-              description="Model selection and generation parameters"
+            <CollapsibleSection
+              title="Generation Parameters"
+              description="Configure model behavior and generation settings"
+              defaultExpanded={false}
             >
               <GeneralSettingsPanel
                 settings={settings}
                 onChange={setSettings}
                 models={models}
               />
-            </SettingsSection>
-          </div>
-        )}
+            </CollapsibleSection>
 
-        {/* Models Tab */}
-        {activeTab === 'models' && (
-          <div className="settings__tab-content">
-            <SettingsSection
+            <CollapsibleSection
               title="Model Selection"
               description="Select the currently active model for chat"
+              defaultExpanded={true}
             >
               <ModelSelector
                 models={models}
@@ -386,11 +384,12 @@ export default function Settings() {
                 onSelectModel={setSelectedModel}
                 onRefreshModels={fetchModels}
               />
-            </SettingsSection>
+            </CollapsibleSection>
 
-            <SettingsSection
+            <CollapsibleSection
               title="Download Models"
               description="Download new models from Ollama library or HuggingFace"
+              defaultExpanded={false}
             >
               <ModelDownloader
                 onDownloadModel={downloadModel}
@@ -401,19 +400,79 @@ export default function Settings() {
                 <p><strong>Ollama Library:</strong> llama2, mistral, codellama, etc.</p>
                 <p><strong>HuggingFace:</strong> hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF</p>
               </div>
-            </SettingsSection>
+            </CollapsibleSection>
           </div>
         )}
 
         {/* Sessions Tab */}
         {activeTab === 'sessions' && (
           <div className="settings__tab-content">
-            <SettingsSection
+            <CollapsibleSection
               title="Session Management"
               description="Create, manage, and switch between conversation sessions"
+              defaultExpanded={true}
             >
               <SessionManager />
-            </SettingsSection>
+            </CollapsibleSection>
+          </div>
+        )}
+
+        {/* Integrations Tab */}
+        {activeTab === 'integrations' && (
+          <div className="settings__tab-content">
+            <CollapsibleSection
+              title="Import & Export"
+              description="Backup, restore, and manage your settings"
+              defaultExpanded={true}
+            >
+              <div className="settings__integration-actions">
+                <div className="settings__integration-group">
+                  <h4 className="settings__integration-title">Export Settings</h4>
+                  <p className="settings__integration-hint">
+                    Download your current settings as a JSON file for backup or sharing.
+                  </p>
+                  <Button onClick={handleExport} variant="secondary">
+                    Export Settings
+                  </Button>
+                </div>
+
+                <div className="settings__integration-group">
+                  <h4 className="settings__integration-title">Import Settings</h4>
+                  <p className="settings__integration-hint">
+                    Load settings from a previously exported JSON file.
+                  </p>
+                  <label className="btn btn--secondary">
+                    Import Settings
+                    <input
+                      type="file"
+                      accept=".json"
+                      onChange={handleImport}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                </div>
+
+                <div className="settings__integration-group">
+                  <h4 className="settings__integration-title">Copy to Clipboard</h4>
+                  <p className="settings__integration-hint">
+                    Copy your settings as JSON text to paste elsewhere.
+                  </p>
+                  <Button onClick={handleCopyToClipboard} variant="secondary">
+                    Copy to Clipboard
+                  </Button>
+                </div>
+
+                <div className="settings__integration-group">
+                  <h4 className="settings__integration-title">Reset to Defaults</h4>
+                  <p className="settings__integration-hint">
+                    Reset all settings to their default values. This action cannot be undone.
+                  </p>
+                  <Button onClick={handleReset} variant="secondary">
+                    Reset to Defaults
+                  </Button>
+                </div>
+              </div>
+            </CollapsibleSection>
           </div>
         )}
       </div>

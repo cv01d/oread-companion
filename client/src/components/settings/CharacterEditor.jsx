@@ -1,231 +1,281 @@
+import { useState, useEffect } from 'react';
 import TextField from '../ui/TextField';
 import TextArea from '../ui/TextArea';
 import ImageUpload from '../ui/ImageUpload';
-import Button from '../ui/Button';
+import MultiSelect from '../ui/MultiSelect';
+import { getCharacter, saveCharacter } from '../../utils/characterAPI';
+import { generateCharacterId, characterFileToSettings } from '../../utils/characterConverter';
 
-export default function CharacterEditor({ character, onChange, onClose, mode = 'single' }) {
-  const handleIdentityChange = (field, value) => {
-    onChange({
-      ...character,
-      identity: {
-        ...character.identity,
-        [field]: value
-      }
-    });
-  };
+// Personality trait options
+const TRAIT_OPTIONS = {
+  emotionalExpression: ['Warm', 'Reserved', 'Passionate', 'Calm', 'Stoic', 'Sensitive', 'Expressive', 'Grumpy', 'Volatile', 'Abrasive'],
+  socialEnergy: ['Extroverted', 'Introverted', 'Friendly', 'Selective', 'Takes Initiative', 'Supportive', 'Independent', 'Surly'],
+  thinkingStyle: ['Analytical', 'Creative', 'Wise', 'Curious', 'Observant', 'Philosophical', 'Pensive', 'Poetic', 'Practical'],
+  humorPersonality: ['Witty', 'Sarcastic', 'Playful', 'Wry', 'Bold', 'Mysterious', 'Brooding', 'Lighthearted', 'Sharp-Tongued'],
+  coreValues: ['Honest', 'Loyal', 'Courageous', 'Ambitious', 'Humble', 'Principled', 'Adventurous', 'Authentic', 'Justice-Oriented', 'Cynical'],
+  howTheyCare: ['Kind', 'Compassionate', 'Empathetic', 'Patient', 'Generous', 'Encouraging', 'Protective', 'Respectful', 'Nurturing'],
+  energyPresence: ['Energetic', 'Confident', 'Assertive', 'Gentle', 'Steady', 'Dynamic', 'Intense', 'Easygoing'],
+  lifestyleInterests: ['Outdoorsy', 'Homebody', 'Romantic', 'Intellectual', 'Artistic', 'Active', 'Contemplative', 'Social']
+};
 
-  const handleCoreChange = (field, value) => {
-    onChange({
-      ...character,
-      core: {
-        ...character.core,
-        [field]: value
-      }
-    });
-  };
+// Default empty character structure
+const EMPTY_CHARACTER = {
+  name: '',
+  age: '',
+  gender: '',
+  species: '',
+  role: '',
+  avatarImage: '',
+  knowledgeSkills: '',
+  hobbiesInterests: '',
+  thingsToAvoid: '',
+  backstory: '',
+  inventory: '',
+  traits: {
+    emotionalExpression: [],
+    socialEnergy: [],
+    thinkingStyle: [],
+    humorPersonality: [],
+    coreValues: [],
+    howTheyCare: [],
+    energyPresence: [],
+    lifestyleInterests: []
+  }
+};
 
-  const handleDynamicsChange = (field, value) => {
-    onChange({
-      ...character,
-      dynamics: {
-        ...character.dynamics,
-        [field]: value
+// Debounce timer
+let saveTimer = null;
+
+export default function CharacterEditor({ characterRef, onCharacterRefChange, mode = 'single' }) {
+  const [character, setCharacter] = useState(EMPTY_CHARACTER);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Load character from file when characterRef changes
+  useEffect(() => {
+    async function loadCharacterData() {
+      if (!characterRef) {
+        setCharacter(EMPTY_CHARACTER);
+        return;
       }
-    });
-  };
+
+      setIsLoading(true);
+      try {
+        const charFile = await getCharacter(characterRef);
+        if (charFile) {
+          const charData = characterFileToSettings(charFile);
+          setCharacter(charData);
+        } else {
+          console.warn(`Character "${characterRef}" not found, using empty template`);
+          setCharacter({...EMPTY_CHARACTER, name: characterRef});
+        }
+      } catch (error) {
+        console.error('Error loading character:', error);
+        setCharacter(EMPTY_CHARACTER);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadCharacterData();
+  }, [characterRef]);
 
   const handleFieldChange = (field, value) => {
-    onChange({
+    const updatedCharacter = {
       ...character,
       [field]: value
-    });
+    };
+
+    // Update local state immediately
+    setCharacter(updatedCharacter);
+
+    // Save to JSON file (debounced)
+    saveToCharacterFile(updatedCharacter);
   };
+
+  const handleTraitChange = (category, values) => {
+    const updatedCharacter = {
+      ...character,
+      traits: {
+        ...character.traits,
+        [category]: values
+      }
+    };
+
+    // Update local state immediately
+    setCharacter(updatedCharacter);
+
+    // Save to JSON file (debounced)
+    saveToCharacterFile(updatedCharacter);
+  };
+
+  const saveToCharacterFile = (characterData) => {
+    // Clear existing timer
+    if (saveTimer) {
+      clearTimeout(saveTimer);
+    }
+
+    // Set new timer (debounce 1 second)
+    saveTimer = setTimeout(async () => {
+      if (characterData.name) {
+        const characterId = generateCharacterId(characterData.name);
+
+        // If name changed, update the reference
+        if (characterId !== characterRef) {
+          onCharacterRefChange(characterId);
+        }
+
+        await saveCharacter(characterId, characterData);
+      }
+    }, 1000);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="character-editor">
+        <p>Loading character...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="character-editor">
-      <div className="character-editor__header">
-        <h3 className="character-editor__title">
-          {mode === 'single' ? 'Edit Character' : 'Edit Character'}
-        </h3>
-        {onClose && (
-          <Button onClick={onClose} variant="secondary" className="character-editor__close">
-            Close
-          </Button>
-        )}
-      </div>
-
-      <div className="character-editor__content">
-        {/* Avatar Image */}
-        <div className="character-editor__field">
-          <label className="character-editor__label">Avatar Image</label>
-          <ImageUpload
-            imageData={character.avatarImage}
-            onChange={(imageData) => handleFieldChange('avatarImage', imageData)}
-            maxSizeKB={500}
-          />
-          <p className="character-editor__hint">
-            Upload a character avatar (max 500KB). Supports JPG, PNG, WebP.
-          </p>
-        </div>
-
-        {/* Identity Section */}
-        <div className="character-editor__section">
-          <h4 className="character-editor__section-title">Identity</h4>
-
-          <div className="character-editor__field">
-            <label className="character-editor__label">Name</label>
-            <TextField
-              value={character.identity.name}
-              onChange={(value) => handleIdentityChange('name', value)}
-              placeholder="Character name"
+      <div className="character-card">
+        {/* Card Header with Avatar */}
+        <div className="character-card__header">
+          <div className="character-card__avatar-section">
+            <ImageUpload
+              value={character.avatarImage || ''}
+              onChange={(value) => handleFieldChange('avatarImage', value)}
+              label="Character Avatar"
             />
           </div>
 
-          <div className="character-editor__field">
-            <label className="character-editor__label">Age</label>
-            <TextField
-              value={character.identity.age}
-              onChange={(value) => handleIdentityChange('age', value)}
-              placeholder="Age or age range"
-            />
-          </div>
+          <div className="character-card__basic-info">
+            <div className="character-editor__field">
+              <label className="character-editor__label">Name</label>
+              <TextField
+                value={character.name || ''}
+                onChange={(value) => handleFieldChange('name', value)}
+                placeholder="Character name"
+              />
+            </div>
 
-          <div className="character-editor__field">
-            <label className="character-editor__label">Gender</label>
-            <TextField
-              value={character.identity.gender}
-              onChange={(value) => handleIdentityChange('gender', value)}
-              placeholder="Gender identity"
-            />
-          </div>
-
-          <div className="character-editor__field">
-            <label className="character-editor__label">Species</label>
-            <TextField
-              value={character.identity.species}
-              onChange={(value) => handleIdentityChange('species', value)}
-              placeholder="Human, Elf, Android, etc."
-            />
-          </div>
-
-          <div className="character-editor__field">
-            <label className="character-editor__label">Profession</label>
-            <TextField
-              value={character.identity.profession}
-              onChange={(value) => handleIdentityChange('profession', value)}
-              placeholder="Occupation or role"
-            />
-          </div>
-        </div>
-
-        {/* Core Traits Section */}
-        <div className="character-editor__section">
-          <h4 className="character-editor__section-title">Core Traits</h4>
-
-          <div className="character-editor__field">
-            <label className="character-editor__label">Personality</label>
-            <TextArea
-              value={character.core.personality}
-              onChange={(value) => handleCoreChange('personality', value)}
-              placeholder="Describe personality traits, demeanor, and typical behavior"
-              rows={4}
-            />
-          </div>
-
-          <div className="character-editor__field">
-            <label className="character-editor__label">Backstory</label>
-            <TextArea
-              value={character.core.backstory}
-              onChange={(value) => handleCoreChange('backstory', value)}
-              placeholder="Character history, origin, and formative experiences"
-              rows={4}
-            />
-          </div>
-
-          <div className="character-editor__field">
-            <label className="character-editor__label">Knowledge & Skills</label>
-            <TextArea
-              value={character.core.knowledge}
-              onChange={(value) => handleCoreChange('knowledge', value)}
-              placeholder="What they know, what they're good at, areas of expertise"
-              rows={3}
-            />
-          </div>
-        </div>
-
-        {/* Dynamics Section */}
-        <div className="character-editor__section">
-          <h4 className="character-editor__section-title">Dynamics</h4>
-
-          <div className="character-editor__field">
-            <label className="character-editor__label">Relationship to User</label>
-            <TextArea
-              value={character.dynamics.relationshipToUser}
-              onChange={(value) => handleDynamicsChange('relationshipToUser', value)}
-              placeholder="How does this character know the user? What's their relationship?"
-              rows={3}
-            />
-          </div>
-
-          <div className="character-editor__field">
-            <label className="character-editor__label">Current Location</label>
-            <TextField
-              value={character.dynamics.currentLocation}
-              onChange={(value) => handleDynamicsChange('currentLocation', value)}
-              placeholder="Where is the character right now?"
-            />
-          </div>
-        </div>
-
-        {/* Vocal Profile Section */}
-        <div className="character-editor__section">
-          <h4 className="character-editor__section-title">Vocal Profile</h4>
-
-          <div className="character-editor__field">
-            <label className="character-editor__label">Speech Style & Patterns</label>
-            <TextArea
-              value={character.vocalProfile}
-              onChange={(value) => handleFieldChange('vocalProfile', value)}
-              placeholder="How does this character speak? Tone, vocabulary, speech patterns, catchphrases"
-              rows={3}
-            />
-            <p className="character-editor__hint">
-              Describe their unique way of speaking, word choices, and mannerisms.
-            </p>
-          </div>
-        </div>
-
-        {/* Multi-character specific fields */}
-        {mode === 'multi' && (
-          <>
-            <div className="character-editor__section">
-              <h4 className="character-editor__section-title">Multi-Character Fields</h4>
-
+            <div className="character-editor__row">
               <div className="character-editor__field">
-                <label className="character-editor__label">Motivation</label>
-                <TextArea
-                  value={character.motivation || ''}
-                  onChange={(value) => handleFieldChange('motivation', value)}
-                  placeholder="What drives this character? What are their goals?"
-                  rows={3}
+                <label className="character-editor__label">Age</label>
+                <TextField
+                  value={character.age || ''}
+                  onChange={(value) => handleFieldChange('age', value)}
+                  placeholder="Age or age range"
                 />
               </div>
 
               <div className="character-editor__field">
-                <label className="character-editor__label">Secrets</label>
-                <TextArea
-                  value={character.secrets || ''}
-                  onChange={(value) => handleFieldChange('secrets', value)}
-                  placeholder="Hidden information the character knows but won't reveal easily"
-                  rows={3}
+                <label className="character-editor__label">Gender</label>
+                <TextField
+                  value={character.gender || ''}
+                  onChange={(value) => handleFieldChange('gender', value)}
+                  placeholder="Gender identity"
                 />
-                <p className="character-editor__hint">
-                  Information the AI knows but the character keeps hidden from the user.
-                </p>
               </div>
             </div>
-          </>
-        )}
+
+            <div className="character-editor__row">
+              <div className="character-editor__field">
+                <label className="character-editor__label">Species</label>
+                <TextField
+                  value={character.species || ''}
+                  onChange={(value) => handleFieldChange('species', value)}
+                  placeholder="Human, Elf, AI, etc."
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Role / Profession */}
+        <div className="character-editor__section">
+          <label className="character-editor__label">Role / Profession</label>
+          <TextField
+            value={character.role || ''}
+            onChange={(value) => handleFieldChange('role', value)}
+            placeholder="e.g., Tavern keeper, Ship captain, Detective"
+          />
+        </div>
+
+        {/* Knowledge & Skills */}
+        <div className="character-editor__section">
+          <label className="character-editor__label">Knowledge & Skills</label>
+          <TextArea
+            value={character.knowledgeSkills || ''}
+            onChange={(value) => handleFieldChange('knowledgeSkills', value)}
+            placeholder="What they know and what they're good at..."
+            rows={3}
+          />
+        </div>
+
+        {/* Hobbies & Interests */}
+        <div className="character-editor__section">
+          <label className="character-editor__label">Hobbies & Interests</label>
+          <TextArea
+            value={character.hobbiesInterests || ''}
+            onChange={(value) => handleFieldChange('hobbiesInterests', value)}
+            placeholder="What they enjoy, what they do for fun..."
+            rows={3}
+          />
+        </div>
+
+        {/* Things to Avoid */}
+        <div className="character-editor__section">
+          <label className="character-editor__label">Things They Avoid</label>
+          <TextArea
+            value={character.thingsToAvoid || ''}
+            onChange={(value) => handleFieldChange('thingsToAvoid', value)}
+            placeholder="Topics or behaviors they dislike or avoid..."
+            rows={2}
+          />
+        </div>
+
+        {/* Backstory */}
+        <div className="character-editor__section">
+          <label className="character-editor__label">Backstory</label>
+          <TextArea
+            value={character.backstory || ''}
+            onChange={(value) => handleFieldChange('backstory', value)}
+            placeholder="Their history, experiences, key events..."
+            rows={4}
+          />
+        </div>
+
+        {/* Inventory */}
+        <div className="character-editor__section">
+          <label className="character-editor__label">Inventory</label>
+          <TextArea
+            value={character.inventory || ''}
+            onChange={(value) => handleFieldChange('inventory', value)}
+            placeholder="Items they carry or possess..."
+            rows={2}
+          />
+        </div>
+
+        {/* Personality Traits */}
+        <div className="character-editor__section">
+          <h3 className="character-editor__section-title">Personality Traits</h3>
+          <p className="character-editor__hint">Select traits that define this character</p>
+
+          {Object.entries(TRAIT_OPTIONS).map(([category, options]) => (
+            <div key={category} className="character-editor__trait-group">
+              <label className="character-editor__label">
+                {category.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+              </label>
+              <MultiSelect
+                options={options}
+                selected={character.traits?.[category] || []}
+                onChange={(values) => handleTraitChange(category, values)}
+              />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -1,29 +1,32 @@
 import { useState } from 'react';
 import Button from '../ui/Button';
 import CharacterEditor from './CharacterEditor';
+import { deleteCharacter as deleteCharacterFile } from '../../utils/characterAPI';
+import { generateCharacterId } from '../../utils/characterConverter';
 
 // Empty character template for multi-character mode
 const createEmptyCharacter = () => ({
-  identity: {
-    name: '',
-    age: '',
-    gender: '',
-    species: '',
-    profession: ''
-  },
-  core: {
-    personality: '',
-    backstory: '',
-    knowledge: ''
-  },
-  dynamics: {
-    relationshipToUser: '',
-    currentLocation: ''
-  },
-  vocalProfile: '',
+  name: '',
+  age: '',
+  gender: '',
+  species: '',
+  role: '',
   avatarImage: '',
-  motivation: '',
-  secrets: ''
+  knowledgeSkills: '',
+  hobbiesInterests: '',
+  thingsToAvoid: '',
+  backstory: '',
+  inventory: '',
+  traits: {
+    emotionalExpression: [],
+    socialEnergy: [],
+    thinkingStyle: [],
+    humorPersonality: [],
+    coreValues: [],
+    howTheyCare: [],
+    energyPresence: [],
+    lifestyleInterests: []
+  }
 });
 
 export default function CharacterList({ characters, onChange }) {
@@ -43,12 +46,23 @@ export default function CharacterList({ characters, onChange }) {
     const updatedCharacters = [...characters];
     updatedCharacters[editingIndex] = updatedCharacter;
     onChange(updatedCharacters);
+    // Character saving to JSON is handled by CharacterEditor
   };
 
-  const handleDeleteCharacter = (index) => {
+  const handleDeleteCharacter = async (index) => {
     if (confirm('Are you sure you want to delete this character?')) {
+      const characterToDelete = characters[index];
+
+      // Delete from JSON file if character has a name
+      if (characterToDelete.name) {
+        const characterId = generateCharacterId(characterToDelete.name);
+        await deleteCharacterFile(characterId);
+      }
+
+      // Update settings
       const updatedCharacters = characters.filter((_, i) => i !== index);
       onChange(updatedCharacters);
+
       if (editingIndex === index) {
         setEditingIndex(null);
       }
@@ -59,12 +73,22 @@ export default function CharacterList({ characters, onChange }) {
     setEditingIndex(null);
   };
 
+  // Get character trait summary
+  const getTraitSummary = (character) => {
+    const allTraits = [
+      ...(character.traits?.emotionalExpression || []),
+      ...(character.traits?.socialEnergy || []),
+      ...(character.traits?.thinkingStyle || [])
+    ];
+    return allTraits.slice(0, 3).join(' • ');
+  };
+
   return (
     <div className="character-list">
       <div className="character-list__header">
         <h3 className="character-list__title">Characters ({characters.length})</h3>
         <Button onClick={handleAddCharacter} variant="primary">
-          Add Character
+          + Add Character
         </Button>
       </div>
 
@@ -78,29 +102,30 @@ export default function CharacterList({ characters, onChange }) {
       {editingIndex === null && characters.length > 0 && (
         <div className="character-list__grid">
           {characters.map((character, index) => (
-            <div key={index} className="character-card">
+            <div key={index} className="character-card-preview">
               {character.avatarImage && (
-                <div className="character-card__avatar">
-                  <img src={character.avatarImage} alt={character.identity.name || 'Character'} />
+                <div className="character-card-preview__avatar">
+                  <img src={character.avatarImage} alt={character.name || 'Character'} />
                 </div>
               )}
-              <div className="character-card__content">
-                <h4 className="character-card__name">
-                  {character.identity.name || `Character ${index + 1}`}
+              <div className="character-card-preview__content">
+                <h4 className="character-card-preview__name">
+                  {character.name || `Character ${index + 1}`}
                 </h4>
-                <p className="character-card__info">
-                  {character.identity.species && `${character.identity.species}`}
-                  {character.identity.species && character.identity.profession && ' • '}
-                  {character.identity.profession}
-                </p>
-                {character.core.personality && (
-                  <p className="character-card__personality">
-                    {character.core.personality.substring(0, 100)}
-                    {character.core.personality.length > 100 ? '...' : ''}
+                {(character.species || character.role) && (
+                  <p className="character-card-preview__info">
+                    {character.species}
+                    {character.species && character.role && ' • '}
+                    {character.role}
+                  </p>
+                )}
+                {getTraitSummary(character) && (
+                  <p className="character-card-preview__traits">
+                    {getTraitSummary(character)}
                   </p>
                 )}
               </div>
-              <div className="character-card__actions">
+              <div className="character-card-preview__actions">
                 <Button onClick={() => handleEditCharacter(index)} variant="secondary">
                   Edit
                 </Button>
@@ -115,12 +140,19 @@ export default function CharacterList({ characters, onChange }) {
 
       {/* Character Editor */}
       {editingIndex !== null && (
-        <CharacterEditor
-          character={characters[editingIndex]}
-          onChange={handleUpdateCharacter}
-          onClose={handleCloseEditor}
-          mode="multi"
-        />
+        <div className="character-list__editor">
+          <div className="character-list__editor-header">
+            <h3>Editing {characters[editingIndex].name || `Character ${editingIndex + 1}`}</h3>
+            <Button onClick={handleCloseEditor} variant="secondary">
+              Done
+            </Button>
+          </div>
+          <CharacterEditor
+            character={characters[editingIndex]}
+            onChange={handleUpdateCharacter}
+            mode="multi"
+          />
+        </div>
       )}
     </div>
   );

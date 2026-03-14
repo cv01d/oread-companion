@@ -23,7 +23,7 @@ export function buildSystemPrompt(settings, activeMode = null) {
  */
 function buildRoleplayPrompt(settings) {
   const { roleplay, userPersona } = settings;
-  const { world, characterMode, singleCharacter, multipleCharacters } = roleplay;
+  const { world, characterMode, singleCharacterRef, multipleCharacterRefs, _loadedCharacters } = roleplay;
 
   let prompt = '';
 
@@ -59,10 +59,13 @@ function buildRoleplayPrompt(settings) {
   }
 
   // === CHARACTER SECTION ===
+  // Use _loadedCharacters if available (loaded from files), otherwise fall back to refs
   if (characterMode === 'single') {
-    prompt += buildSingleCharacterSection(singleCharacter);
+    const character = _loadedCharacters?.[0] || { name: singleCharacterRef };
+    prompt += buildSingleCharacterSection(character);
   } else {
-    prompt += buildMultipleCharactersSection(multipleCharacters);
+    const characters = _loadedCharacters || multipleCharacterRefs.map(ref => ({ name: ref }));
+    prompt += buildMultipleCharactersSection(characters);
   }
 
   // === USER PERSONA SECTION ===
@@ -81,51 +84,74 @@ function buildRoleplayPrompt(settings) {
  * Build single character section with variable mapping
  */
 function buildSingleCharacterSection(character) {
-  let section = `**CHARACTER:**\n`;
+  let section = `**MAIN CHARACTER:**\n`;
 
-  // Identity
-  const { identity, core, dynamics, vocalProfile } = character;
-
-  if (identity.name) {
-    section += `Name: ${identity.name}\n`;
+  // Basic Identity
+  if (character.name) {
+    section += `Name: ${character.name}\n`;
   }
-  if (identity.age) {
-    section += `Age: ${identity.age}\n`;
+  if (character.age) {
+    section += `Age: ${character.age}\n`;
   }
-  if (identity.gender) {
-    section += `Gender: ${identity.gender}\n`;
+  if (character.gender) {
+    section += `Gender: ${character.gender}\n`;
   }
-  if (identity.species) {
-    section += `Species: ${identity.species}\n`;
+  if (character.species) {
+    section += `Species: ${character.species}\n`;
   }
-  if (identity.profession) {
-    section += `Profession: ${identity.profession}\n`;
+  if (character.role) {
+    section += `Role: ${character.role}\n`;
   }
 
   section += `\n`;
 
-  // Core traits
-  if (core.personality) {
-    section += `**Personality:**\n${core.personality}\n\n`;
+  // Character Details
+  if (character.knowledgeSkills) {
+    section += `**Knowledge & Skills:**\n${character.knowledgeSkills}\n\n`;
   }
-  if (core.backstory) {
-    section += `**Backstory:**\n${core.backstory}\n\n`;
+  if (character.hobbiesInterests) {
+    section += `**Hobbies/Interests:**\n${character.hobbiesInterests}\n\n`;
   }
-  if (core.knowledge) {
-    section += `**Knowledge & Skills:**\n${core.knowledge}\n\n`;
+  if (character.thingsToAvoid) {
+    section += `**Things They Avoid:**\n${character.thingsToAvoid}\n\n`;
   }
-
-  // Dynamics
-  if (dynamics.relationshipToUser) {
-    section += `**Relationship to User:**\n${dynamics.relationshipToUser}\n\n`;
+  if (character.backstory) {
+    section += `**Backstory:**\n${character.backstory}\n\n`;
   }
-  if (dynamics.currentLocation) {
-    section += `**Current Location:**\n${dynamics.currentLocation}\n\n`;
+  if (character.inventory) {
+    section += `**Inventory:**\n${character.inventory}\n\n`;
   }
 
-  // Vocal profile
-  if (vocalProfile) {
-    section += `**Vocal Profile & Speech Style:**\n${vocalProfile}\n\n`;
+  // Personality Traits
+  if (character.traits) {
+    section += `**PERSONALITY TRAITS:**\n`;
+
+    if (character.traits.emotionalExpression && character.traits.emotionalExpression.length > 0) {
+      section += `Emotional Expression: ${character.traits.emotionalExpression.join(', ')}\n`;
+    }
+    if (character.traits.socialEnergy && character.traits.socialEnergy.length > 0) {
+      section += `Social Energy: ${character.traits.socialEnergy.join(', ')}\n`;
+    }
+    if (character.traits.thinkingStyle && character.traits.thinkingStyle.length > 0) {
+      section += `Thinking Style: ${character.traits.thinkingStyle.join(', ')}\n`;
+    }
+    if (character.traits.humorPersonality && character.traits.humorPersonality.length > 0) {
+      section += `Humor & Personality: ${character.traits.humorPersonality.join(', ')}\n`;
+    }
+    if (character.traits.coreValues && character.traits.coreValues.length > 0) {
+      section += `Core Values: ${character.traits.coreValues.join(', ')}\n`;
+    }
+    if (character.traits.howTheyCare && character.traits.howTheyCare.length > 0) {
+      section += `How They Care: ${character.traits.howTheyCare.join(', ')}\n`;
+    }
+    if (character.traits.energyPresence && character.traits.energyPresence.length > 0) {
+      section += `Energy & Presence: ${character.traits.energyPresence.join(', ')}\n`;
+    }
+    if (character.traits.lifestyleInterests && character.traits.lifestyleInterests.length > 0) {
+      section += `Lifestyle & Interests: ${character.traits.lifestyleInterests.join(', ')}\n`;
+    }
+
+    section += `\n`;
   }
 
   return section;
@@ -140,38 +166,68 @@ function buildMultipleCharactersSection(characters) {
   }
 
   let section = `**CHARACTERS:**\n`;
-  section += `You may play any of the following characters as needed. Choose the most appropriate character based on the scene and user interaction.\n\n`;
+  section += `You may play any of the following characters as needed. The first character is the main character. Choose the most appropriate character based on the scene and user interaction.\n\n`;
 
   characters.forEach((character, index) => {
-    section += `--- Character ${index + 1}: ${character.identity.name || 'Unnamed'} ---\n`;
+    const characterType = index === 0 ? 'MAIN CHARACTER' : 'SUPPORTING CHARACTER';
+    section += `--- ${characterType}: ${character.name || 'Unnamed'} ---\n`;
 
-    // Identity
-    const { identity, core, dynamics, vocalProfile, motivation, secrets } = character;
-
-    if (identity.name) section += `Name: ${identity.name}\n`;
-    if (identity.age) section += `Age: ${identity.age}\n`;
-    if (identity.gender) section += `Gender: ${identity.gender}\n`;
-    if (identity.species) section += `Species: ${identity.species}\n`;
-    if (identity.profession) section += `Profession: ${identity.profession}\n`;
+    // Basic Identity
+    if (character.name) section += `Name: ${character.name}\n`;
+    if (character.age) section += `Age: ${character.age}\n`;
+    if (character.gender) section += `Gender: ${character.gender}\n`;
+    if (character.species) section += `Species: ${character.species}\n`;
+    if (character.role) section += `Role: ${character.role}\n`;
     section += `\n`;
 
-    if (core.personality) {
-      section += `Personality: ${core.personality}\n`;
+    // Character Details
+    if (character.knowledgeSkills) {
+      section += `Knowledge & Skills: ${character.knowledgeSkills}\n`;
     }
-    if (core.backstory) {
-      section += `Backstory: ${core.backstory}\n`;
+    if (character.hobbiesInterests) {
+      section += `Hobbies/Interests: ${character.hobbiesInterests}\n`;
     }
-    if (dynamics.relationshipToUser) {
-      section += `Relationship to User: ${dynamics.relationshipToUser}\n`;
+    if (character.thingsToAvoid) {
+      section += `Things They Avoid: ${character.thingsToAvoid}\n`;
     }
-    if (vocalProfile) {
-      section += `Vocal Profile: ${vocalProfile}\n`;
+    if (character.backstory) {
+      section += `Backstory: ${character.backstory}\n`;
     }
-    if (motivation) {
-      section += `Motivation: ${motivation}\n`;
+    if (character.inventory) {
+      section += `Inventory: ${character.inventory}\n`;
     }
-    if (secrets) {
-      section += `Secrets (hidden from user): ${secrets}\n`;
+
+    // Personality Traits
+    if (character.traits) {
+      const hasTraits = Object.values(character.traits).some(arr => arr && arr.length > 0);
+      if (hasTraits) {
+        section += `\n**Personality Traits:**\n`;
+
+        if (character.traits.emotionalExpression && character.traits.emotionalExpression.length > 0) {
+          section += `- Emotional Expression: ${character.traits.emotionalExpression.join(', ')}\n`;
+        }
+        if (character.traits.socialEnergy && character.traits.socialEnergy.length > 0) {
+          section += `- Social Energy: ${character.traits.socialEnergy.join(', ')}\n`;
+        }
+        if (character.traits.thinkingStyle && character.traits.thinkingStyle.length > 0) {
+          section += `- Thinking Style: ${character.traits.thinkingStyle.join(', ')}\n`;
+        }
+        if (character.traits.humorPersonality && character.traits.humorPersonality.length > 0) {
+          section += `- Humor & Personality: ${character.traits.humorPersonality.join(', ')}\n`;
+        }
+        if (character.traits.coreValues && character.traits.coreValues.length > 0) {
+          section += `- Core Values: ${character.traits.coreValues.join(', ')}\n`;
+        }
+        if (character.traits.howTheyCare && character.traits.howTheyCare.length > 0) {
+          section += `- How They Care: ${character.traits.howTheyCare.join(', ')}\n`;
+        }
+        if (character.traits.energyPresence && character.traits.energyPresence.length > 0) {
+          section += `- Energy & Presence: ${character.traits.energyPresence.join(', ')}\n`;
+        }
+        if (character.traits.lifestyleInterests && character.traits.lifestyleInterests.length > 0) {
+          section += `- Lifestyle & Interests: ${character.traits.lifestyleInterests.join(', ')}\n`;
+        }
+      }
     }
 
     section += `\n`;

@@ -875,6 +875,155 @@ body {
       }
     }
   }
+
+  &__integration-actions {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-2xl;
+  }
+
+  &__integration-group {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+    padding: $spacing-xl;
+    background-color: rgba(255, 255, 255, 0.03);
+    border-radius: $radius-md;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+      border-color: rgba(77, 184, 168, 0.2);
+    }
+  }
+
+  &__integration-title {
+    font-size: $font-size-lg;
+    font-weight: 500;
+    color: $color-text-primary;
+    margin: 0;
+  }
+
+  &__integration-hint {
+    font-size: $font-size-sm;
+    color: $color-text-muted;
+    margin: 0;
+    font-weight: 300;
+    line-height: 1.5;
+  }
+
+  &__save-notification {
+    padding: $spacing-md $spacing-lg;
+    margin-bottom: $spacing-lg;
+    border-radius: $radius-md;
+    text-align: center;
+    font-size: $font-size-sm;
+    font-weight: 500;
+    animation: slideDown 0.3s ease;
+
+    &--saving {
+      color: $color-warning;
+      background-color: rgba(243, 156, 18, 0.1);
+      border: 1px solid rgba(243, 156, 18, 0.3);
+    }
+
+    &--saved {
+      color: $color-success;
+      background-color: rgba(40, 123, 128, 0.1);
+      border: 1px solid rgba(40, 123, 128, 0.3);
+    }
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Collapsible Section Component
+.collapsible-section {
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: $radius-md;
+  margin-bottom: $spacing-xl;
+  overflow: hidden;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: rgba(77, 184, 168, 0.3);
+  }
+
+  &__header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: $spacing-lg $spacing-xl;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    &:active {
+      background-color: rgba(255, 255, 255, 0.08);
+    }
+  }
+
+  &__header-content {
+    flex: 1;
+  }
+
+  &__title {
+    font-size: $font-size-lg;
+    font-weight: 500;
+    color: $color-text-primary;
+    margin: 0 0 $spacing-xs 0;
+  }
+
+  &__description {
+    font-size: $font-size-sm;
+    color: $color-text-muted;
+    margin: 0;
+    font-weight: 300;
+  }
+
+  &__icon {
+    font-size: $font-size-sm;
+    color: $color-primary;
+    transition: transform 0.3s ease;
+    transform: rotate(-90deg);
+    margin-left: $spacing-lg;
+
+    &--expanded {
+      transform: rotate(0deg);
+    }
+  }
+
+  &__content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+
+    &--expanded {
+      max-height: 5000px;
+    }
+  }
+
+  &__inner {
+    padding: 0 $spacing-xl $spacing-xl $spacing-xl;
+  }
 }
 
 // ============================================
@@ -1106,6 +1255,36 @@ body {
 
   &__hint {
     margin-top: $spacing-sm;
+    margin-bottom: $spacing-md;
+    font-size: $font-size-sm;
+    color: $color-text-muted;
+  }
+}
+
+// Narrative Settings Panel
+.narrative-settings-panel {
+  &__title {
+    font-size: $font-size-lg;
+    font-weight: 600;
+    margin-bottom: $spacing-xl;
+    color: $color-text-primary;
+  }
+
+  &__field {
+    margin-bottom: $spacing-xl;
+  }
+
+  &__label {
+    display: block;
+    font-size: $font-size-base;
+    font-weight: 500;
+    margin-bottom: $spacing-sm;
+    color: $color-text-primary;
+  }
+
+  &__hint {
+    margin-top: $spacing-sm;
+    margin-bottom: $spacing-md;
     font-size: $font-size-sm;
     color: $color-text-muted;
   }
@@ -1153,6 +1332,7 @@ body {
 
   &__hint {
     margin-top: $spacing-sm;
+    margin-bottom: $spacing-md;
     font-size: $font-size-sm;
     color: $color-text-muted;
   }
@@ -1200,6 +1380,7 @@ body {
 
   &__hint {
     margin-top: $spacing-sm;
+    margin-bottom: $spacing-md;
     font-size: $font-size-sm;
     color: $color-text-muted;
   }
@@ -1241,6 +1422,7 @@ body {
 
   &__hint {
     margin-top: $spacing-sm;
+    margin-bottom: $spacing-md;
     font-size: $font-size-sm;
     color: $color-text-muted;
   }
@@ -1298,51 +1480,24 @@ body {
 }
 
 // Character Editor
+// Character Editor (Card-Based)
 .character-editor {
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: $radius-md;
-  padding: $spacing-xl;
-  background-color: rgba(255, 255, 255, 0.03);
-
-  &__header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  &__field {
     margin-bottom: $spacing-xl;
   }
 
-  &__title {
-    font-size: $font-size-lg;
+  &__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $spacing-lg;
+  }
+
+  &__label {
+    display: block;
+    font-size: $font-size-base;
     font-weight: 500;
+    margin-bottom: $spacing-sm;
     color: $color-text-primary;
-  }
-
-  &__close {
-    min-width: 100px;
-  }
-
-  &__content {
-    max-height: 600px;
-    overflow-y: auto;
-    padding-right: $spacing-sm;
-
-    &::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    &::-webkit-scrollbar-track {
-      background: transparent;
-      border-radius: $radius-sm;
-    }
-
-    &::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: $radius-sm;
-
-      &:hover {
-        background: rgba(255, 255, 255, 0.15);
-      }
-    }
   }
 
   &__section {
@@ -1350,31 +1505,120 @@ body {
   }
 
   &__section-title {
-    font-size: $font-size-md;
-    font-weight: 500;
-    margin-bottom: $spacing-lg;
+    font-size: $font-size-lg;
+    font-weight: 600;
+    margin-bottom: $spacing-xl;
     color: $color-text-primary;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: $spacing-md;
+  }
+}
+
+// Character Card
+.character-card {
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: $radius-lg;
+  overflow: hidden;
+
+  &__header {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: $spacing-2xl;
+    padding: $spacing-2xl;
+    background-color: rgba(255, 255, 255, 0.02);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    padding-bottom: $spacing-sm;
   }
 
-  &__field {
+  &__avatar-section {
+    .image-upload {
+      width: 100%;
+    }
+
+    .image-upload__thumbnail {
+      width: 100%;
+      height: 200px;
+      border-radius: $radius-md;
+    }
+
+    .image-upload__dropzone {
+      width: 100%;
+      min-height: 200px;
+    }
+  }
+
+  &__basic-info {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-lg;
+  }
+
+  &__body {
+    padding: $spacing-2xl;
+  }
+}
+
+// Character Card Preview (in list)
+.character-card-preview {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: $radius-md;
+  padding: $spacing-lg;
+  background-color: rgba(255, 255, 255, 0.03);
+  transition: all 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    border-color: $color-primary;
+    transform: translateY(-2px);
+  }
+
+  &__avatar {
+    width: 100%;
+    height: 150px;
+    margin-bottom: $spacing-lg;
+    border-radius: $radius-md;
+    overflow: hidden;
+    background: linear-gradient(135deg, rgba(40, 123, 128, 0.2), rgba(40, 123, 128, 0.05));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  &__content {
     margin-bottom: $spacing-lg;
   }
 
-  &__label {
-    display: block;
-    font-size: $font-size-base;
-    font-weight: 400;
+  &__name {
+    font-size: $font-size-md;
+    font-weight: 600;
     margin-bottom: $spacing-sm;
-    color: $color-text-light;
+    color: $color-text-primary;
   }
 
-  &__hint {
-    margin-top: $spacing-sm;
+  &__info {
     font-size: $font-size-sm;
     color: $color-text-muted;
-    font-weight: 300;
+    margin-bottom: $spacing-xs;
+  }
+
+  &__traits {
+    font-size: $font-size-xs;
+    color: $color-primary;
+    font-weight: 500;
+  }
+
+  &__actions {
+    display: flex;
+    gap: $spacing-sm;
+
+    .btn {
+      flex: 1;
+      font-size: $font-size-sm;
+    }
   }
 }
 
@@ -1402,72 +1646,165 @@ body {
 
   &__grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: $spacing-lg;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: $spacing-xl;
+  }
+
+  &__editor {
+    margin-top: $spacing-xl;
+  }
+
+  &__editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: $spacing-xl;
+    padding-bottom: $spacing-lg;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+
+    h3 {
+      font-size: $font-size-xl;
+      font-weight: 600;
+      color: $color-text-primary;
+      margin: 0;
+    }
   }
 }
 
-// Character Card
-.character-card {
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: $radius-md;
-  padding: $spacing-lg;
-  background-color: rgba(255, 255, 255, 0.03);
-  transition: all 0.2s ease;
-
-  &:hover {
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-    border-color: rgba(77, 184, 168, 0.3);
-    transform: translateY(-2px);
-  }
-
-  &__avatar {
-    width: 100%;
-    height: 180px;
-    margin-bottom: $spacing-lg;
-    border-radius: $radius-md;
-    overflow: hidden;
-    background: linear-gradient(135deg, rgba(77, 184, 168, 0.2), rgba(77, 184, 168, 0.05));
-    border: 1px solid rgba(255, 255, 255, 0.1);
-
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-  }
-
-  &__content {
-    margin-bottom: $spacing-lg;
-  }
-
-  &__name {
-    font-size: $font-size-md;
+// Multi-Select Component
+.multi-select {
+  &__label {
+    display: block;
+    font-size: $font-size-base;
     font-weight: 500;
-    margin-bottom: $spacing-sm;
+    margin-bottom: $spacing-md;
     color: $color-text-primary;
   }
 
-  &__info {
-    font-size: $font-size-sm;
-    color: $color-text-muted;
-    margin-bottom: $spacing-sm;
-    font-weight: 300;
+  &__options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-lg;
   }
 
-  &__personality {
-    font-size: $font-size-sm;
+  &__option {
+    padding: $spacing-sm $spacing-lg;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: $radius-lg;
+    background-color: rgba(255, 255, 255, 0.05);
     color: $color-text-light;
-    line-height: 1.6;
-    font-weight: 300;
+    font-size: $font-size-sm;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Montserrat', sans-serif;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    &--selected {
+      background-color: $color-primary;
+      border-color: $color-primary;
+      color: $color-text-white;
+      font-weight: 500;
+
+      &:hover {
+        background-color: darken($color-primary, 5%);
+      }
+    }
   }
 
-  &__actions {
+  &__custom {
     display: flex;
     gap: $spacing-sm;
+    margin-bottom: $spacing-lg;
+  }
 
-    .btn {
-      flex: 1;
+  &__custom-input {
+    flex: 1;
+    padding: $spacing-md;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: $radius-sm;
+    background-color: rgba(255, 255, 255, 0.05);
+    color: $color-text-primary;
+    font-size: $font-size-sm;
+    font-family: 'Montserrat', sans-serif;
+
+    &:focus {
+      outline: none;
+      border-color: $color-primary;
+      background-color: rgba(255, 255, 255, 0.08);
+    }
+
+    &::placeholder {
+      color: $color-text-muted;
+    }
+  }
+
+  &__custom-btn {
+    padding: $spacing-md $spacing-lg;
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: $radius-sm;
+    color: $color-text-primary;
+    font-size: $font-size-sm;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Montserrat', sans-serif;
+
+    &:hover:not(:disabled) {
+      background-color: $color-primary;
+      border-color: $color-primary;
+      color: $color-text-white;
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+
+  &__selected {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-sm;
+    padding: $spacing-lg;
+    background-color: rgba(255, 255, 255, 0.02);
+    border-radius: $radius-sm;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  &__tag {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-xs $spacing-md;
+    background-color: $color-primary;
+    color: $color-text-white;
+    border-radius: $radius-lg;
+    font-size: $font-size-sm;
+    font-weight: 500;
+  }
+
+  &__tag-remove {
+    background: none;
+    border: none;
+    color: $color-text-white;
+    font-size: $font-size-lg;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 $spacing-xs;
+    margin: 0;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+    font-family: 'Montserrat', sans-serif;
+
+    &:hover {
+      opacity: 1;
     }
   }
 }
@@ -2270,6 +2607,7 @@ $spacing-mobile-2xl: 1.2rem;
 
   // World Settings, Utility Settings, User Persona Panels
   .world-settings-panel,
+  .narrative-settings-panel,
   .utility-settings-panel,
   .user-persona-panel,
   .general-settings-panel {

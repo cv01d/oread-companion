@@ -103,15 +103,15 @@ export default function UserPersonaPanel({ settings, onChange }) {
 
         <div className="user-persona-panel__field">
           <label className="user-persona-panel__label">Timezone</label>
+          <p className="user-persona-panel__hint">
+            The AI will be aware of your local time for time-sensitive responses.
+          </p>
           <Dropdown
             options={TIMEZONE_OPTIONS}
             value={userPersona.timezone || 'America/Los_Angeles'}
             onChange={(value) => handleFieldChange('timezone', value)}
             placeholder="Select your timezone"
           />
-          <p className="user-persona-panel__hint">
-            The AI will be aware of your local time for time-sensitive responses.
-          </p>
         </div>
       </div>
 
@@ -151,15 +151,15 @@ export default function UserPersonaPanel({ settings, onChange }) {
 
         <div className="user-persona-panel__field">
           <label className="user-persona-panel__label">Personal Boundaries</label>
+          <p className="user-persona-panel__hint">
+            Help the AI respect your boundaries and comfort zones.
+          </p>
           <TextArea
             value={userPersona.boundaries}
             onChange={(value) => handleFieldChange('boundaries', value)}
             placeholder="Topics to avoid, sensitivities, or comfort preferences"
             rows={3}
           />
-          <p className="user-persona-panel__hint">
-            Help the AI respect your boundaries and comfort zones.
-          </p>
         </div>
       </div>
 
@@ -168,26 +168,26 @@ export default function UserPersonaPanel({ settings, onChange }) {
 
         <div className="user-persona-panel__field">
           <label className="user-persona-panel__label">Banned Words</label>
+          <p className="user-persona-panel__hint">
+            Words the AI should never use in responses.
+          </p>
           <TagInput
             tags={userPersona.linguisticFilters.bannedWords}
             onChange={(tags) => handleLinguisticFiltersChange('bannedWords', tags)}
             placeholder="Add a word and press Enter"
           />
-          <p className="user-persona-panel__hint">
-            Words the AI should never use in responses.
-          </p>
         </div>
 
         <div className="user-persona-panel__field">
           <label className="user-persona-panel__label">Banned Phrases</label>
+          <p className="user-persona-panel__hint">
+            Phrases or expressions the AI should avoid.
+          </p>
           <TagInput
             tags={userPersona.linguisticFilters.bannedPhrases}
             onChange={(tags) => handleLinguisticFiltersChange('bannedPhrases', tags)}
             placeholder="Add a phrase and press Enter"
           />
-          <p className="user-persona-panel__hint">
-            Phrases or expressions the AI should avoid.
-          </p>
         </div>
       </div>
     </div>

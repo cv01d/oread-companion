@@ -4,10 +4,12 @@ import ollamaService from './services/ollama.js';
 import settingsRouter from './routes/settings.js';
 import sessionsRouter from './routes/sessions.js';
 import memoryRouter from './routes/memory.js';
+import charactersRouter from './routes/characters.js';
 import mcpClient from './services/mcpClient.js';
 import database from './services/database.js';
 import langchainRAG from './services/langchainRAG.js';
 import extractionAgent from './services/extractionAgent.js';
+import { initializeCharacters } from './controllers/characterController.js';
 
 const app = express();
 const PORT = 3001;
@@ -26,6 +28,9 @@ async function initializeServices() {
     // Initialize MCP clients
     await mcpClient.initialize();
 
+    // Initialize character system (defaults ready, user folder empty)
+    initializeCharacters();
+
     console.log('✅ All services initialized');
     return true;
   } catch (error) {
@@ -38,6 +43,7 @@ async function initializeServices() {
 app.use('/api/settings', settingsRouter);
 app.use('/api/sessions', sessionsRouter);
 app.use('/api/memory', memoryRouter);
+app.use('/api/characters', charactersRouter);
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
@@ -298,6 +304,10 @@ async function startServer() {
       console.log(`   - GET  /api/settings`);
       console.log(`   - POST /api/settings`);
       console.log(`   - DELETE /api/settings`);
+      console.log(`   - GET  /api/characters`);
+      console.log(`   - GET  /api/characters/:id`);
+      console.log(`   - POST /api/characters/:id`);
+      console.log(`   - DELETE /api/characters/:id`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
