@@ -1,39 +1,6 @@
-import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import crypto from 'crypto';
 import { CONFIG } from '../config/index.js';
-
-/**
- * Rate limiting middleware
- */
-
-// General API rate limiter
-export const generalLimiter = rateLimit({
-  windowMs: CONFIG.RATE_LIMIT.WINDOW_MS, // 15 minutes default
-  max: CONFIG.RATE_LIMIT.MAX_REQUESTS, // 100 requests per window default
-  message: {
-    success: false,
-    error: 'Too many requests from this IP, please try again later'
-  },
-  standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
-  legacyHeaders: false, // Disable `X-RateLimit-*` headers
-  skip: (req) => {
-    // Skip rate limiting for health check in development
-    return CONFIG.isDevelopment && req.path === '/api/health';
-  }
-});
-
-// Strict rate limiter for expensive operations
-export const strictLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: CONFIG.RATE_LIMIT.CHAT_MAX, // 10 requests per minute default
-  message: {
-    success: false,
-    error: 'Rate limit exceeded for this operation. Please slow down.'
-  },
-  standardHeaders: true,
-  legacyHeaders: false
-});
 
 
 /**
@@ -232,8 +199,6 @@ export function sanitizeInputs(req, res, next) {
 }
 
 export default {
-  generalLimiter,
-  strictLimiter,
   securityHeaders,
   corsConfig,
   requestSizeMonitor,

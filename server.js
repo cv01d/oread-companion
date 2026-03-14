@@ -22,8 +22,6 @@ import templatesRouter from './routes/templates.js';
 
 // Middleware
 import {
-  generalLimiter,
-  strictLimiter,
   securityHeaders,
   corsConfig,
   requestSizeMonitor,
@@ -78,9 +76,6 @@ app.use(sanitizeInputs);
 
 // Security logging
 app.use(securityLogger);
-
-// General rate limiting for all API routes
-app.use('/api', generalLimiter);
 
 // CSRF protection for state-changing requests
 app.use(csrfProtect);
@@ -165,7 +160,7 @@ app.get('/api/models', asyncHandler(async (req, res) => {
 }));
 
 // Pull/download a model with SSE for progress updates
-app.post('/api/models/pull', strictLimiter, validate(modelPullSchema), asyncHandler(async (req, res) => {
+app.post('/api/models/pull', validate(modelPullSchema), asyncHandler(async (req, res) => {
   const { modelName } = req.body;
 
   // Set up SSE headers
@@ -191,7 +186,7 @@ app.post('/api/models/pull', strictLimiter, validate(modelPullSchema), asyncHand
 // ===== CHAT ENDPOINT =====
 
 // Chat endpoint with streaming response and RAG support
-app.post('/api/chat', strictLimiter, validate(chatSchema), asyncHandler(async (req, res) => {
+app.post('/api/chat', validate(chatSchema), asyncHandler(async (req, res) => {
   const { model, messages, systemPrompt, temperature, topP, maxTokens, sessionId, settings } = req.body;
 
   // Set up SSE headers
