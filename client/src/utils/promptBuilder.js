@@ -320,20 +320,7 @@ function buildUserPersonaSection(userPersona) {
   const { linguisticFilters } = userPersona;
 
   // Hardcoded permanently banned phrases (always enforced)
-  const PERMANENTLY_BANNED_PHRASES = [
-    "I'm here",
-    "i'm here",
-    "I'm available",
-    "i'm available",
-    "I am here",
-    "i am here",
-    "I am available",
-    "i am available",
-    "I'm here for you",
-    "i'm here for you",
-    "I am here for you",
-    "i am here for you"
-  ];
+  const PERMANENTLY_BANNED_PHRASES = [];
 
   // Combine user-defined banned items with permanently banned phrases
   const allBannedWords = [...linguisticFilters.bannedWords];

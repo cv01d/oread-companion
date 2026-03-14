@@ -22,6 +22,7 @@ client/node_modules/
 
 # Exclude vector store
 /data/vector-store/
+/data/vectors/
 
 # Exclude session encryption key
 /.oread-chat-key
