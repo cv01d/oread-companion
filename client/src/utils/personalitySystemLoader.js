@@ -57,8 +57,9 @@ export function getCharacterTraitDefinitions(characterTraits) {
 }
 
 /**
- * Build personality guidance text - LEAN VERSION
- * Strips technical metadata to focus solely on the AI's execution.
+ * Build personality guidance text - NATURAL LANGUAGE VERSION
+ * Converts trait definitions into natural behavioral instructions
+ * that the model follows without echoing metadata.
  */
 export function buildPersonalityGuidance(traitDefinitions) {
   if (!traitDefinitions || Object.keys(traitDefinitions).length === 0) return '';
@@ -67,12 +68,10 @@ export function buildPersonalityGuidance(traitDefinitions) {
 
   for (const [propName, data] of Object.entries(traitDefinitions)) {
     const label = categoryLabels[propName] || propName;
-    guidance += `**${label}**:\n`;
+    guidance += `${label}:\n`;
 
     for (const trait of data.traits) {
-      // We strip the (P80) and logic bridge text to save tokens.
-      // The System Prompt Header already explains what Discourse/Conduct means.
-      guidance += `• ${trait.name}: [Discourse: ${trait.discourse}] [Conduct: ${trait.conduct}]\n`;
+      guidance += `• ${trait.name} — speak with ${trait.discourse.toLowerCase()}; ${trait.conduct.toLowerCase()}\n`;
     }
     guidance += `\n`;
   }

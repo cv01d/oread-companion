@@ -1613,12 +1613,16 @@ body {
 
   &__actions {
     display: flex;
+    flex-wrap: wrap;
     gap: $spacing-sm;
 
     .btn {
-      flex: 1;
       font-size: $font-size-sm;
     }
+  }
+
+  &__active-btn {
+    width: 100%;
   }
 }
 

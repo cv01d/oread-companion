@@ -12,7 +12,8 @@ export const DEFAULT_SETTINGS = {
     },
     characterMode: 'single', // 'single' or 'multi'
     character: null, // Inline character data (single mode)
-    characters: [] // Inline character data array (multi mode)
+    characters: [], // Inline character data array (multi mode)
+    activeCharacterIndex: 0 // Which character is the "main" in multi mode
   },
 
   utility: {

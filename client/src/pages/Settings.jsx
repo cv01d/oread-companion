@@ -374,6 +374,16 @@ export default function Settings() {
                         }
                       });
                     }}
+                    activeCharacterIndex={settings.roleplay.activeCharacterIndex || 0}
+                    onActiveCharacterChange={(index) => {
+                      setSettings({
+                        ...settings,
+                        roleplay: {
+                          ...settings.roleplay,
+                          activeCharacterIndex: index
+                        }
+                      });
+                    }}
                   />
                 </div>
               )}

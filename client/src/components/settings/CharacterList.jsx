@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Button from '../ui/Button';
 import CharacterEditor from './CharacterEditor';
 
-export default function CharacterList({ characters = [], onCharactersChange }) {
+export default function CharacterList({ characters = [], onCharactersChange, activeCharacterIndex = 0, onActiveCharacterChange }) {
   const [editingIndex, setEditingIndex] = useState(null);
 
   const handleAddCharacter = () => {
@@ -20,6 +20,12 @@ export default function CharacterList({ characters = [], onCharactersChange }) {
       const updated = characters.filter((_, i) => i !== index);
       onCharactersChange(updated);
       if (editingIndex === index) setEditingIndex(null);
+      // Adjust active index if needed
+      if (index < activeCharacterIndex) {
+        onActiveCharacterChange(activeCharacterIndex - 1);
+      } else if (index === activeCharacterIndex && activeCharacterIndex >= updated.length) {
+        onActiveCharacterChange(Math.max(0, updated.length - 1));
+      }
     }
   };
 
@@ -84,9 +90,6 @@ export default function CharacterList({ characters = [], onCharactersChange }) {
               <div className="character-card-preview__info">
                 <h4 className="character-card-preview__name">
                   {char?.name || 'Unnamed'}
-                  {index === 0 && (
-                    <span className="character-card-preview__badge">Main</span>
-                  )}
                 </h4>
 
                 {char?.role && (
@@ -111,6 +114,19 @@ export default function CharacterList({ characters = [], onCharactersChange }) {
               </div>
 
               <div className="character-card-preview__actions">
+                {index === activeCharacterIndex ? (
+                  <Button variant="primary" disabled className="character-card-preview__active-btn">
+                    Active Character
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => onActiveCharacterChange(index)}
+                    variant="secondary"
+                    className="character-card-preview__active-btn"
+                  >
+                    Make Active
+                  </Button>
+                )}
                 <Button
                   onClick={() => handleEditCharacter(index)}
                   variant="secondary"

@@ -53,7 +53,8 @@ const BLANK_SETTINGS = {
     },
     characterMode: 'single',
     character: null,
-    characters: []
+    characters: [],
+    activeCharacterIndex: 0
   },
   utility: {
     assistantIdentity: { persona: '', communicationStyle: '' },

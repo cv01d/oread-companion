@@ -104,7 +104,8 @@ export const settingsSchema = Joi.object({
       world: Joi.object().optional(),
       characterMode: Joi.string().valid('single', 'multi').optional(),
       character: Joi.object().allow(null).optional(),
-      characters: Joi.array().items(Joi.object()).optional()
+      characters: Joi.array().items(Joi.object()).optional(),
+      activeCharacterIndex: Joi.number().integer().min(0).optional()
     }).optional(),
 
     utility: Joi.object().optional(),

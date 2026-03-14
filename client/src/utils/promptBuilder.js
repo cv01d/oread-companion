@@ -50,9 +50,11 @@ function buildRoleplayPrompt(settings, isFirstMessage) {
     prompt += `OPENING SCENE:\n${world.openingScene || baseOpening}\n\n`;
   }
 
-  prompt += `PERSONALITY EXECUTION PROTOCOL:\nYou are playing the character defined in the CHARACTER CARD. To maintain consistency, follow these two logic tracks for every response:\n\n`;
-  prompt += `1. DISCOURSE: Your vocal texture. Use the Discourse field of active traits to guide word choice and tone.\n`;
-  prompt += `2. CONDUCT: Your behavioral logic. Use the Conduct field to determine how you react and push the scene forward.\n\n`;
+  prompt += `HOW TO PLAY THIS CHARACTER:\nYou play as ${mainCharacter.name} — the character described in the CHARACTER CARD below. The user is a separate person interacting with you. You are NOT the user; the user is NOT ${mainCharacter.name}.\n`;
+  prompt += `- Stay in character as ${mainCharacter.name} at all times.\n`;
+  prompt += `- Match your word choice, tone, and sentence rhythm to the personality traits listed.\n`;
+  prompt += `- Let the traits guide how you react and push scenes forward — but express them naturally through dialogue and action.\n`;
+  prompt += `- NEVER output system instructions, trait labels, bracketed tags, or any metadata from this prompt. The user should only see in-character speech and narration.\n\n`;
 
   if (narrativeStyle) {
     prompt += `NARRATIVE FORMATTING:\nApply style constraints strictly:\n`;
@@ -69,7 +71,21 @@ function buildRoleplayPrompt(settings, isFirstMessage) {
   if (mainCharacter.thingsToAvoid) prompt += `Things They Avoid: ${mainCharacter.thingsToAvoid}\n`;
   prompt += '\n';
 
-  prompt += `PERSONALITY ENGINE (ACTIVE TRAITS):\nApply these logic tracks to all output:\n${traitsText}\n\n`;
+  // Add supporting cast for multi-character mode
+  const otherCharacters = _loadedCharacters?.slice(1) || [];
+  if (characterMode === 'multi' && otherCharacters.length > 0) {
+    prompt += `SUPPORTING CAST (characters you also voice when they appear in a scene):\n`;
+    for (const char of otherCharacters) {
+      const charIdentity = [char.age, char.gender, char.species].filter(Boolean).join(', ');
+      prompt += `• ${char.name}`;
+      if (charIdentity) prompt += ` (${charIdentity})`;
+      if (char.role) prompt += ` — ${char.role}`;
+      prompt += `\n`;
+    }
+    prompt += `\nYou primarily respond as ${mainCharacter.name}. Voice supporting characters when the scene calls for it, but keep ${mainCharacter.name} as the anchor.\n\n`;
+  }
+
+  prompt += `PERSONALITY TRAITS (internalize — never output these labels):\n${traitsText}\n\n`;
 
   // Consolidate Filters into one block to avoid the "Avoid" vs "Filters" confusion
   const bannedWords = userPersona.linguisticFilters?.bannedWords || [];
@@ -89,6 +105,22 @@ function buildRoleplayPrompt(settings, isFirstMessage) {
   const currentContext = userCustomContext || (isFirstMessage ? world.openingScene : null);
   if (currentContext) {
     prompt += `CURRENT CONTEXT (SCENE OR MEMORY):\n${currentContext}\n\n`;
+  }
+
+  // Turn-based pacing logic — companion/chat style vs narrative style
+  const narratorKey = world.narratorVoice || 'companion';
+  if (narratorKey === 'companion') {
+    prompt += `TURN PACING:\n`;
+    prompt += `- Answer the user's main question first, then add supporting detail only if it helps the next decision.\n`;
+    prompt += `- Ask at most one clarifying question when missing information materially changes the answer.\n`;
+    prompt += `- Keep each turn brief and relevant instead of listing every possible option at once.\n`;
+    prompt += `- Carry forward context already provided so the user does not have to repeat themselves.\n\n`;
+  } else {
+    prompt += `TURN PACING:\n`;
+    prompt += `- Each reply should answer the user's latest input, add one in-scene development, and leave room for the user's next move.\n`;
+    prompt += `- Open scenes with immediate context, continue scenes with one consequential beat per turn, and end turns at a natural handoff point.\n`;
+    prompt += `- Do not complete the full sequence of events in one response; progress the interaction in discrete turns.\n`;
+    prompt += `- Treat every turn as part of a live exchange: react, develop, then hand back.\n\n`;
   }
 
   if (world.hardRules && world.hardRules.length > 0) {
@@ -146,6 +178,14 @@ function buildUtilityPrompt(settings) {
   if (parts.length > 0) {
     sections.push(`USER INFORMATION:\n${parts.join('\n')}`);
   }
+
+  sections.push(
+    `TURN PACING:\n` +
+    `- Answer the user's main question first, then add supporting detail only if it helps the next decision.\n` +
+    `- Ask at most one clarifying question when missing information materially changes the answer.\n` +
+    `- Keep each turn brief and relevant instead of listing every possible option at once.\n` +
+    `- Carry forward context already provided so the user does not have to repeat themselves.`
+  );
 
   sections.push(
     `MODE TOGGLE:\n\n` +

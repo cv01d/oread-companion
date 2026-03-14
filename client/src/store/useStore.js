@@ -88,9 +88,16 @@ const useStore = create((set, get) => ({
     }
 
     if (settings.roleplay.characterMode === 'multi' && settings.roleplay.characters?.length > 0) {
+      const chars = [...settings.roleplay.characters];
+      const activeIdx = settings.roleplay.activeCharacterIndex || 0;
+      // Put active character first so promptBuilder uses it as the main character
+      if (activeIdx > 0 && activeIdx < chars.length) {
+        const [active] = chars.splice(activeIdx, 1);
+        chars.unshift(active);
+      }
       settingsCopy.roleplay = {
         ...settingsCopy.roleplay,
-        _loadedCharacters: settings.roleplay.characters
+        _loadedCharacters: chars
       };
     }
 
