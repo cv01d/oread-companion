@@ -30,7 +30,7 @@ export const chatSchema = Joi.object({
       'array.max': 'Too many messages (max: 100)'
     }),
 
-  systemPrompt: Joi.string().max(50000).optional().messages({
+  systemPrompt: Joi.string().max(50000).allow('').optional().messages({
     'string.max': 'System prompt too long (max: 50KB)'
   }),
 
@@ -40,6 +40,7 @@ export const chatSchema = Joi.object({
 
   sessionId: Joi.string()
     .pattern(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+    .allow(null)
     .optional()
     .messages({
       'string.pattern.base': 'Invalid session ID format'
@@ -102,7 +103,7 @@ export const settingsSchema = Joi.object({
     userPersona: Joi.object().optional(),
 
     general: Joi.object({
-      selectedModel: Joi.string().max(100).optional(),
+      selectedModel: Joi.string().max(100).allow(null).optional(),
       webSearch: Joi.boolean().optional(),
       chatSearch: Joi.boolean().optional(),
       memory: Joi.boolean().optional(),
