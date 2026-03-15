@@ -50,7 +50,18 @@ function buildRoleplayPrompt(settings, isFirstMessage) {
     prompt += `OPENING SCENE:\n${world.openingScene || baseOpening}\n\n`;
   }
 
-  prompt += `HOW TO PLAY THIS CHARACTER:\nYou play as ${mainCharacter.name} — the character described in the CHARACTER CARD below. The user is a separate person interacting with you. You are NOT the user; the user is NOT ${mainCharacter.name}.\n`;
+  const userName = userPersona.name || 'the user';
+  const allCharNames = (_loadedCharacters || []).map(c => c.name).filter(Boolean);
+
+  prompt += `WHO YOU ARE:\nYou are ${mainCharacter.name}. Every response you write is from ${mainCharacter.name}'s perspective.\n`;
+  if (characterMode === 'multi') {
+    const otherNames = allCharNames.filter(n => n !== mainCharacter.name);
+    if (otherNames.length > 0) {
+      prompt += `IMPORTANT: If previous messages in this conversation show you responding as ${otherNames.join(' or ')}, ignore that pattern. The active character has been switched. You are now ${mainCharacter.name} and must respond ONLY as ${mainCharacter.name} from this point forward.\n`;
+    }
+  }
+  prompt += `- The person typing messages is ${userName}. They are a real person, NOT any of the characters in this world.${allCharNames.length > 0 ? ` ${userName} is not ${allCharNames.join(', not ')}.` : ''}\n`;
+  prompt += `- When ${userName} speaks, they are speaking to ${mainCharacter.name} (you) directly.\n`;
   prompt += `- Stay in character as ${mainCharacter.name} at all times.\n`;
   prompt += `- Match your word choice, tone, and sentence rhythm to the personality traits listed.\n`;
   prompt += `- Let the traits guide how you react and push scenes forward — but express them naturally through dialogue and action.\n`;
@@ -96,7 +107,7 @@ function buildRoleplayPrompt(settings, isFirstMessage) {
   if (bannedPhrases.length > 0) prompt += `BANNED PHRASES: ${bannedPhrases.join(', ')}.\n`;
   prompt += `FORMATTING BANS: NO asterisks for actions. Use parenthetical emotes only. No performative hype or fake-nice toxic positivity.\n\n`;
 
-  prompt += `USER INFORMATION:\nNAME: ${userPersona.name || 'User'}\n`;
+  prompt += `THE PERSON YOU ARE TALKING TO:\nNAME: ${userPersona.name || 'User'} (this is the real person sending messages — not a character)\n`;
   const contextParts = [userPersona.profession, userPersona.bio, userPersona.tastes?.interests].filter(Boolean);
   if (contextParts.length > 0) prompt += `CONTEXT: ${contextParts.join('. ')}\n\n`;
 
