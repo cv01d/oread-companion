@@ -6,6 +6,8 @@ import {
   saveCharacter,
   deleteCharacter
 } from '../controllers/characterController.js';
+import memoryManager from '../services/memoryManager.js';
+import database from '../services/database.js';
 
 const router = express.Router();
 
@@ -34,10 +36,29 @@ router.get('/:id', (req, res) => {
 /**
  * POST /api/characters/:id
  * Save or update a character (user folder only)
+ * Also invalidates lorebook cache for any active sessions using this character.
  */
-router.post('/:id', (req, res) => {
+router.post('/:id', async (req, res) => {
   const result = saveCharacter(req.params.id, req.body.character);
   res.json(result);
+
+  // Background: invalidate lorebook cache for sessions using this character
+  if (result.success) {
+    try {
+      const charName = req.body.character?.name;
+      if (charName) {
+        const sessions = await database.all(
+          `SELECT id FROM sessions WHERE character_name = ? AND archived = 0`,
+          [charName]
+        );
+        for (const session of sessions) {
+          memoryManager.rebuildCharacterDocs(session.id);
+        }
+      }
+    } catch (err) {
+      console.error('Lorebook reindex trigger error:', err);
+    }
+  }
 });
 
 /**

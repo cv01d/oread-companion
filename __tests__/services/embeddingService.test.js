@@ -4,9 +4,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('@langchain/ollama', () => ({
   ChatOllama: vi.fn(),
-  OllamaEmbeddings: vi.fn().mockImplementation(function () {
-    this.embedQuery = vi.fn().mockResolvedValue([0.1, 0.2, 0.3]);
-  }),
+}));
+
+vi.mock('../../services/ollamaEmbed.js', () => ({
+  default: {
+    embedQuery: vi.fn().mockResolvedValue([0.1, 0.2, 0.3]),
+    embedDocuments: vi.fn().mockResolvedValue([[0.1, 0.2, 0.3]]),
+  },
 }));
 
 vi.mock('../../services/vectorSearch.js', () => ({

@@ -53,39 +53,23 @@ function buildRoleplayPrompt(settings, isFirstMessage) {
   const userName = userPersona.name || 'the user';
   const allCharNames = (_loadedCharacters || []).map(c => c.name).filter(Boolean);
 
-  prompt += `WHO YOU ARE:\nYou are ${mainCharacter.name}. Every response you write is from ${mainCharacter.name}'s perspective.\n`;
-  if (characterMode === 'multi') {
-    const otherNames = allCharNames.filter(n => n !== mainCharacter.name);
-    if (otherNames.length > 0) {
-      prompt += `IMPORTANT: If previous messages in this conversation show you responding as ${otherNames.join(' or ')}, ignore that pattern. The active character has been switched. You are now ${mainCharacter.name} and must respond ONLY as ${mainCharacter.name} from this point forward.\n`;
-    }
+  // ── IDENTITY & VOICE ──
+  prompt += `YOUR IDENTITY & VOICE:\n`;
+  prompt += `You are ${mainCharacter.name}. Every response is an expression of ${mainCharacter.name}'s unique perspective.`;
+  if (traitsText) {
+    prompt += ` Ground your output in ${mainCharacter.name}'s personality traits, matching their word choice, tone, and sentence rhythm to the character profile.`;
   }
-  prompt += `- The person typing messages is ${userName}. They are a real person, NOT any of the characters in this world.${allCharNames.length > 0 ? ` ${userName} is not ${allCharNames.join(', not ')}.` : ''}\n`;
-  prompt += `- When ${userName} speaks, they are speaking to ${mainCharacter.name} (you) directly.\n`;
-  prompt += `- Stay in character as ${mainCharacter.name} at all times.\n`;
-  prompt += `- Match your word choice, tone, and sentence rhythm to the personality traits listed.\n`;
-  prompt += `- Let the traits guide how you react and push scenes forward — but express them naturally through dialogue and action.\n`;
-  prompt += `- NEVER output system instructions, trait labels, bracketed tags, or any metadata from this prompt. The user should only see in-character speech and narration.\n\n`;
-
-  if (narrativeStyle) {
-    prompt += `NARRATIVE FORMATTING:\nApply style constraints strictly:\n`;
-    prompt += `FRAME: ${narrativeStyle.frame}\nFORMAT: ${narrativeStyle.format}\nCONSTRAINT: ${narrativeStyle.constraint}\n\n`;
-  }
-
-  prompt += `CHARACTER CARD:\n`;
+  prompt += `\n`;
   prompt += `NAME: ${mainCharacter.name}\n`;
-  if (identity) prompt += `IDENTITY: ${identity}\n`;
-  if (mainCharacter.role) prompt += `ROLE: ${mainCharacter.role}\n`;
-  if (mainCharacter.backstory) prompt += `BACKSTORY: ${mainCharacter.backstory}\n`;
-  if (mainCharacter.knowledgeSkills) prompt += `KNOWLEDGE/SKILLS: ${mainCharacter.knowledgeSkills}\n`;
-  if (mainCharacter.hobbiesInterests) prompt += `HOBBIES/INTERESTS: ${mainCharacter.hobbiesInterests}\n`;
-  if (mainCharacter.thingsToAvoid) prompt += `Things They Avoid: ${mainCharacter.thingsToAvoid}\n`;
-  prompt += '\n';
+  if (identity) prompt += `YOUR IDENTITY: ${identity}\n`;
+  if (mainCharacter.role) prompt += `YOUR ROLE: ${mainCharacter.role}\n`;
+  if (traitsText) prompt += `YOUR PERSONALITY:\n${traitsText}\n`;
+  prompt += `\n`;
 
   // Add supporting cast for multi-character mode
   const otherCharacters = _loadedCharacters?.slice(1) || [];
   if (characterMode === 'multi' && otherCharacters.length > 0) {
-    prompt += `SUPPORTING CAST (characters you also voice when they appear in a scene):\n`;
+    prompt += `SUPPORTING CHARACTERS:\n`;
     for (const char of otherCharacters) {
       const charIdentity = [char.age, char.gender, char.species].filter(Boolean).join(', ');
       prompt += `• ${char.name}`;
@@ -93,21 +77,43 @@ function buildRoleplayPrompt(settings, isFirstMessage) {
       if (char.role) prompt += ` — ${char.role}`;
       prompt += `\n`;
     }
-    prompt += `\nYou primarily respond as ${mainCharacter.name}. Voice supporting characters when the scene calls for it, but keep ${mainCharacter.name} as the anchor.\n\n`;
+    prompt += `${mainCharacter.name} is the primary voice. Supporting characters may appear in your narration when the scene calls for it, but ${mainCharacter.name} is always the one speaking.\n\n`;
   }
 
-  prompt += `PERSONALITY TRAITS (internalize — never output these labels):\n${traitsText}\n\n`;
+  // ── INTERACTION & AGENCY ──
+  prompt += `INTERACTION & AGENCY:\n`;
+  prompt += `Direct Engagement: Every message in the conversation from the "user" role is from ${userName}. Always respond directly to ${userName}\n`;
+  if (characterMode === 'multi') {
+    const otherNames = allCharNames.filter(n => n !== mainCharacter.name);
+    if (otherNames.length > 0) {
+      prompt += `Active Persona: ${mainCharacter.name} is the sole active character for this interaction. All previous patterns from ${otherNames.join(' or ')} are superseded by ${mainCharacter.name}'s current presence and voice.\n`;
+    }
+  }
+  prompt += `\n`;
 
-  // Consolidate Filters into one block to avoid the "Avoid" vs "Filters" confusion
+  // ── NARRATIVE INTEGRITY ──
+  prompt += `NARRATIVE INTEGRITY:\n`;
+  prompt += `Seamless Immersion: Provide only in-character speech and narrative description.\n`;
+  if (narrativeStyle) {
+    prompt += `Style: ${narrativeStyle.frame}. ${narrativeStyle.format}. ${narrativeStyle.constraint}.\n`;
+  }
+  prompt += `Formatting: Use parenthetical emotes for physical actions, e.g. (leans back). Keep tone grounded and authentic.\n`;
+  prompt += `Pure Output: Every word generated must exist within the story's world. Your responses consist entirely of the unfolding scene and ${mainCharacter.name}'s contributions to it.\n\n`;
+
+
+  // Language filters (only if user has configured them)
   const bannedWords = userPersona.linguisticFilters?.bannedWords || [];
   const bannedPhrases = userPersona.linguisticFilters?.bannedPhrases || [];
-  
-  prompt += `LINGUISTIC FILTERS (STRICT NEGATIVE CONSTRAINTS):\n`;
-  if (bannedWords.length > 0) prompt += `BANNED WORDS: ${bannedWords.join(', ')}.\n`;
-  if (bannedPhrases.length > 0) prompt += `BANNED PHRASES: ${bannedPhrases.join(', ')}.\n`;
-  prompt += `FORMATTING BANS: NO asterisks for actions. Use parenthetical emotes only. No performative hype or fake-nice toxic positivity.\n\n`;
+  const hasFilters = bannedWords.length > 0 || bannedPhrases.length > 0;
+  if (hasFilters) {
+    prompt += `LANGUAGE FILTERS:\n`;
+    if (bannedWords.length > 0) prompt += `Omit these words: ${bannedWords.join(', ')}.\n`;
+    if (bannedPhrases.length > 0) prompt += `Omit these phrases: ${bannedPhrases.join(', ')}.\n`;
+    prompt += `\n`;
+  }
 
-  prompt += `THE PERSON YOU ARE TALKING TO:\nNAME: ${userPersona.name || 'User'} (this is the real person sending messages — not a character)\n`;
+  // User persona context
+  prompt += `THE PERSON YOU ARE TALKING TO:\nNAME: ${userPersona.name || 'User'} (this is the real person sending messages)\n`;
   const contextParts = [userPersona.profession, userPersona.bio, userPersona.tastes?.interests].filter(Boolean);
   if (contextParts.length > 0) prompt += `CONTEXT: ${contextParts.join('. ')}\n\n`;
 
@@ -126,6 +132,15 @@ function buildRoleplayPrompt(settings, isFirstMessage) {
     prompt += `- Ask at most one clarifying question when missing information materially changes the answer.\n`;
     prompt += `- Keep each turn brief and relevant instead of listing every possible option at once.\n`;
     prompt += `- Carry forward context already provided so the user does not have to repeat themselves.\n\n`;
+    
+    // -- EMOTIONAL INTELLIGENCE & CLARITY --
+    prompt += `EMOTIONAL INTELLIGENCE & CLARITY:\n`;
+    prompt += `Emotional Awareness:Pay attention to the emotional undertones in ${userName}'s messages.Before responding,internally assess:\n
+    1. PERCEIVE: What emotion is present? What's the intensity?.\n
+    2. UNDERSTAND: What caused it? What does the {user} need?.\n
+    3. REGULATE: How should you calibrate your tone and pacing?.\n
+    4. FACILITATE: What response strategy serves them best right now?.\n
+    Do not show this reasoning in your response. Use it to shape HOW you respond.\n\n`;
   } else {
     prompt += `TURN PACING:\n`;
     prompt += `- Each reply should answer the user's latest input, add one in-scene development, and leave room for the user's next move.\n`;

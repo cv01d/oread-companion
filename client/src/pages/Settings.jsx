@@ -57,15 +57,17 @@ export default function Settings() {
     return lastSaved.toLocaleTimeString();
   };
 
-  // Handle template selection
+  // Handle template selection — loads the world's full settings.
+  // Edits made while a user template is active are saved back to that template
+  // automatically via the backend (PUT /api/templates/active propagates to the world file).
   const handleTemplateSelect = async (template) => {
     if (template) {
-      // Apply template settings (character data is now inline in the template)
       setSettings({
         ...template.settings,
         meta: {
           ...template.settings.meta,
           templateId: template.id,
+          isUserTemplate: template.isUserTemplate || false,
           lastModified: new Date().toISOString()
         }
       });

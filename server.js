@@ -11,6 +11,9 @@ import ollamaService from './services/ollama.js';
 import database from './services/database.js';
 import embeddingService from './services/embeddingService.js';
 import extractionAgent from './services/extractionAgent.js';
+import memoryManager from './services/memoryManager.js';
+import conversationMemory from './services/conversationMemory.js';
+import entityMemory from './services/entityMemory.js';
 import { initializeCharacters } from './controllers/characterController.js';
 
 // Routes
@@ -178,7 +181,7 @@ app.post('/api/models/pull', validate(modelPullSchema), asyncHandler(async (req,
 
 // ===== CHAT ENDPOINT =====
 
-// Chat endpoint with streaming response and RAG support
+// Chat endpoint with streaming response and unified memory system
 app.post('/api/chat', validate(chatSchema), asyncHandler(async (req, res) => {
   const { model, messages, systemPrompt, temperature, topP, frequencyPenalty, maxTokens, sessionId, settings } = req.body;
 
@@ -188,37 +191,51 @@ app.post('/api/chat', validate(chatSchema), asyncHandler(async (req, res) => {
   res.setHeader('Connection', 'keep-alive');
 
   let messagesToSend = messages;
-  let ragUsed = false;
+  let augmentedSystemPrompt = systemPrompt || '';
+  let memoryUsed = false;
 
   try {
-    // Check if we should use RAG
-    if (sessionId && settings) {
-      const shouldUseRAG = await embeddingService.shouldUseRAG(sessionId, settings);
+    const memoryEnabled = settings?.general?.memory;
+    const userMessage = messages[messages.length - 1]?.content || '';
 
-      if (shouldUseRAG) {
-        console.log('🧠 Using RAG for context retrieval');
+    // ── Unified Memory System ──────────────────────────────────
+    if (sessionId && memoryEnabled) {
+      try {
+        // 1. Initialize session memory (indexes lorebook + loads entities)
+        const characters = resolveCharacters(settings);
+        await memoryManager.initializeSession(sessionId, characters);
 
-        // Get last user message
-        const userMessage = messages[messages.length - 1]?.content || '';
+        // 2. Retrieve relevant context from unified FAISS index (token-budgeted)
+        const { chunks, totalTokens } = await memoryManager.retrieve(sessionId, userMessage, 1300);
 
-        // Get RAG context
-        const ragResult = await embeddingService.queryWithRAG(sessionId, userMessage, settings, model);
+        if (chunks.length > 0) {
+          const contextBlock = memoryManager.formatRetrievedContext(chunks);
+          augmentedSystemPrompt += `\n\n${contextBlock}`;
+          memoryUsed = true;
 
-        // Use only recent messages from RAG
-        const recentMessages = await embeddingService.getRecentMessages(sessionId, 20);
-        messagesToSend = recentMessages.map(m => ({
-          role: m.role,
-          content: m.content
-        }));
+          const typeCounts = {};
+          for (const c of chunks) {
+            typeCounts[c.type] = (typeCounts[c.type] || 0) + 1;
+          }
+          console.log(`🧠 Memory: ${chunks.length} chunks (${totalTokens} tokens) — ${JSON.stringify(typeCounts)}`);
+        }
 
-        ragUsed = true;
-        console.log(`✅ RAG: ${ragResult.recentMessageCount} recent + ${ragResult.vectorResultCount} retrieved`);
+        // 3. Use conversation summary buffer instead of crude message windowing
+        const { summary, recentMessages } = await conversationMemory.getConversationContext(sessionId);
+        messagesToSend = conversationMemory.buildMessagesForLLM(summary, recentMessages);
+
+        if (summary) {
+          console.log(`📝 Using conversation summary (${recentMessages.length} recent messages)`);
+        }
+      } catch (memError) {
+        console.error('Memory system error (falling back to full messages):', memError);
+        // Fall back to raw messages on memory failure
       }
     }
 
     // Build options object
     const options = {
-      systemPrompt: systemPrompt || undefined,
+      systemPrompt: augmentedSystemPrompt || undefined,
       temperature: temperature !== undefined ? temperature : undefined,
       topP: topP !== undefined ? topP : undefined,
       frequencyPenalty: frequencyPenalty !== undefined ? frequencyPenalty : undefined,
@@ -229,7 +246,7 @@ app.post('/api/chat', validate(chatSchema), asyncHandler(async (req, res) => {
     if (CONFIG.isDevelopment) {
       console.log('💬 Chat Request:');
       console.log('Model:', model);
-      console.log('Messages:', messagesToSend.length, ragUsed ? '(RAG)' : '(Full)');
+      console.log('Messages:', messagesToSend.length, memoryUsed ? '(Memory)' : '(Full)');
       console.log('Temperature:', temperature, 'Top P:', topP);
     }
 
@@ -266,28 +283,49 @@ app.post('/api/chat', validate(chatSchema), asyncHandler(async (req, res) => {
 
     res.end();
 
-    // Background tasks: embeddings and extraction are not critical-path, fine as fire-and-forget
-    if (sessionId && settings?.general?.memory) {
+    // ── Background Tasks (serialized to avoid hogging Ollama) ──
+    // Ollama processes requests sequentially on the GPU. Running embed +
+    // multiple LLM calls in parallel queues them all up and blocks the
+    // next chat request. Instead, run them in sequence: fast embed first,
+    // then one LLM task at a time.
+    if (sessionId && memoryEnabled) {
       const userMsg = messages[messages.length - 1];
       const assistantMsg = { role: 'assistant', content: assistantResponse };
 
-      embeddingService.addDocuments(sessionId, [
-        { ...userMsg, id: userMsgId },
-        { ...assistantMsg, id: assistantMsgId }
-      ]).catch(err => console.error('Embedding error:', err));
+      (async () => {
+        try {
+          // 1. Embed (fast, uses embed model — doesn't block chat model)
+          await memoryManager.addMessages(sessionId, [
+            { ...userMsg, id: userMsgId },
+            { ...assistantMsg, id: assistantMsgId }
+          ]);
+        } catch (err) { console.error('Memory indexing error:', err); }
 
-      if (settings?.mode === 'roleplay') {
-        extractionAgent.shouldRunAnalysis(sessionId).then(async shouldAnalyze => {
-          if (shouldAnalyze) {
-            console.log('🔍 Running extraction analysis...');
-            const result = await extractionAgent.analyzeConversation(sessionId, settings);
-            if (result.proposed_updates.length > 0) {
-              console.log(`💡 Found ${result.proposed_updates.length} suggested updates`);
-              await saveExtractionResults(sessionId, result.proposed_updates);
+        try {
+          // 2. Summary update (uses chat model — run alone)
+          await conversationMemory.updateSummary(sessionId, model);
+        } catch (err) { console.error('Summary update error:', err); }
+
+        try {
+          // 3. Entity extraction (uses chat model — run alone)
+          await entityMemory.extractAndStore(sessionId, userMessage, assistantResponse, model);
+        } catch (err) { console.error('Entity extraction error:', err); }
+
+        // 4. Roleplay extraction (uses chat model — run last, least urgent)
+        if (settings?.mode === 'roleplay') {
+          try {
+            const shouldAnalyze = await extractionAgent.shouldRunAnalysis(sessionId);
+            if (shouldAnalyze) {
+              console.log('🔍 Running extraction analysis...');
+              const result = await extractionAgent.analyzeConversation(sessionId, settings);
+              if (result.proposed_updates.length > 0) {
+                console.log(`💡 Found ${result.proposed_updates.length} suggested updates`);
+                await saveExtractionResults(sessionId, result.proposed_updates);
+              }
             }
-          }
-        }).catch(err => console.error('Extraction error:', err));
-      }
+          } catch (err) { console.error('Extraction error:', err); }
+        }
+      })();
     }
   } catch (error) {
     const errorMsg = CONFIG.isDevelopment ? error.message : 'Chat request failed';
@@ -295,6 +333,30 @@ app.post('/api/chat', validate(chatSchema), asyncHandler(async (req, res) => {
     res.end();
   }
 }));
+
+/**
+ * Resolve character data from settings for memory initialization.
+ */
+function resolveCharacters(settings) {
+  if (!settings?.roleplay) return [];
+
+  const { characterMode, character, characters, _loadedCharacters } = settings.roleplay;
+
+  // Prefer _loadedCharacters (already resolved by the client)
+  if (_loadedCharacters && _loadedCharacters.length > 0) {
+    return _loadedCharacters;
+  }
+
+  if (characterMode === 'multi' && characters && characters.length > 0) {
+    return characters;
+  }
+
+  if (character) {
+    return [character];
+  }
+
+  return [];
+}
 
 // ===== HELPER FUNCTIONS =====
 

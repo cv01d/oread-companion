@@ -92,6 +92,26 @@ class DatabaseService {
     `);
 
 
+    // Entities table (Layer 3: user facts extracted by LLM)
+    await this.db.exec(`
+      CREATE TABLE IF NOT EXISTS entities (
+        id TEXT PRIMARY KEY,
+        session_id TEXT NOT NULL,
+        entity_name TEXT NOT NULL,
+        entity_info TEXT NOT NULL,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+      );
+    `);
+
+    // Migration: add summary column to sessions if missing
+    const sessionCols = await this.db.all(`PRAGMA table_info(sessions)`);
+    if (!sessionCols.find(c => c.name === 'summary')) {
+      await this.db.exec(`ALTER TABLE sessions ADD COLUMN summary TEXT DEFAULT ''`);
+      console.log('✅ Added summary column to sessions');
+    }
+
     // Create indexes
     await this.db.exec(`
       CREATE INDEX IF NOT EXISTS idx_messages_session
@@ -106,6 +126,11 @@ class DatabaseService {
     await this.db.exec(`
       CREATE INDEX IF NOT EXISTS idx_sessions_updated
       ON sessions(updated_at DESC);
+    `);
+
+    await this.db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_entities_session
+      ON entities(session_id);
     `);
 
   }

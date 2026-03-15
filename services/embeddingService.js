@@ -1,7 +1,8 @@
-import { ChatOllama, OllamaEmbeddings } from '@langchain/ollama';
+import { ChatOllama } from '@langchain/ollama';
 import vectorSearch from './vectorSearch.js';
 import database from './database.js';
 import { CONFIG } from '../config/index.js';
+import ollamaEmbed from './ollamaEmbed.js';
 
 class LangChainRAGService {
   constructor() {
@@ -11,10 +12,7 @@ class LangChainRAGService {
       temperature: 0.7
     });
 
-    this.embeddings = new OllamaEmbeddings({
-      baseUrl: CONFIG.OLLAMA_URL,
-      model: CONFIG.OLLAMA_EMBED_MODEL
-    });
+    this.embeddings = ollamaEmbed;
   }
 
   /**

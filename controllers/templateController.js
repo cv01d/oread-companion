@@ -193,7 +193,10 @@ export async function getActiveTemplate(req, res) {
 
 /**
  * PUT /api/templates/active
- * Save current active settings
+ * Save current active settings.
+ * If a user template is applied (meta.templateId + meta.isUserTemplate),
+ * also write the settings back to that template file so changes persist
+ * across world switches.
  */
 export async function saveActiveTemplate(req, res) {
   try {
@@ -209,6 +212,30 @@ export async function saveActiveTemplate(req, res) {
     };
 
     await writeActiveSettings(settings);
+
+    // Propagate to the applied user template so settings survive world switches
+    const templateId = settings.meta?.templateId;
+    const isUserTemplate = settings.meta?.isUserTemplate;
+    if (templateId && isUserTemplate) {
+      const sanitized = sanitizeTemplateId(templateId);
+      if (sanitized) {
+        const templatePath = path.join(USER_TEMPLATES_DIR, `${sanitized}.json`);
+        const resolvedPath = path.resolve(templatePath);
+        const resolvedBase = path.resolve(USER_TEMPLATES_DIR);
+
+        if (resolvedPath.startsWith(resolvedBase) && fs.existsSync(resolvedPath)) {
+          try {
+            const existing = safeJSONParse(fs.readFileSync(resolvedPath, 'utf8'));
+            existing.settings = settings;
+            await fsAsync.writeFile(resolvedPath, JSON.stringify(existing, null, 2), 'utf8');
+          } catch (err) {
+            console.error('Failed to propagate settings to user template:', err);
+            // Non-fatal — active.json is already saved
+          }
+        }
+      }
+    }
+
     res.json({ success: true, settings });
   } catch (error) {
     console.error('Error saving active template:', error);

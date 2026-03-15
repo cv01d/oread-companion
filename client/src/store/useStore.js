@@ -38,6 +38,17 @@ const useStore = create((set, get) => ({
         const result = await saveSettingsAPI(newSettings);
         if (result.success) {
           set({ isSavingSettings: false, lastSaved: new Date() });
+
+          // Keep the in-memory templates list in sync when editing a user world
+          const tid = newSettings.meta?.templateId;
+          if (tid && newSettings.meta?.isUserTemplate) {
+            const templates = get().templates;
+            set({
+              templates: templates.map(t =>
+                t.id === tid ? { ...t, settings: newSettings } : t
+              )
+            });
+          }
         } else {
           console.error('❌ Failed to save settings to backend:', result.error);
           set({ isSavingSettings: false });
@@ -698,8 +709,22 @@ const useStore = create((set, get) => ({
   saveAsTemplate: async (name, description) => {
     try {
       const settings = get().settings;
-      await saveUserTemplateAPI(name, description, settings);
+      const result = await saveUserTemplateAPI(name, description, settings);
       await get().fetchTemplates();
+
+      // Link active settings to the newly created world so future edits propagate
+      if (result.template?.id) {
+        get().setSettings({
+          ...get().settings,
+          meta: {
+            ...get().settings.meta,
+            templateId: result.template.id,
+            isUserTemplate: true,
+            lastModified: new Date().toISOString()
+          }
+        });
+      }
+
       return { success: true };
     } catch (error) {
       console.error('Failed to save template:', error);

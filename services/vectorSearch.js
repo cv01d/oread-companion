@@ -1,18 +1,15 @@
 import { FaissStore } from '@langchain/community/vectorstores/faiss';
-import { OllamaEmbeddings } from '@langchain/ollama';
 import { Document } from '@langchain/core/documents';
 import path from 'path';
 import fs from 'fs/promises';
 import { CONFIG } from '../config/index.js';
+import ollamaEmbed from './ollamaEmbed.js';
 
 const VECTORS_DIR = path.join(process.cwd(), 'data', 'vectors');
 
 class FaissVectorSearch {
   constructor() {
-    this.embeddings = new OllamaEmbeddings({
-      baseUrl: CONFIG.OLLAMA_URL,
-      model: CONFIG.OLLAMA_EMBED_MODEL
-    });
+    this.embeddings = ollamaEmbed;
   }
 
   _sessionDir(sessionId) {
