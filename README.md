@@ -168,6 +168,15 @@ For full architecture details, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ---
 
+## Screenshots
+
+![Screenshot 1](screenshots/screenshot-1.png)
+![Screenshot 2](screenshots/screenshot-2.png)
+![Screenshot 3](screenshots/screenshot-3.png)
+![Screenshot 4](screenshots/screenshot-4.png)
+
+---
+
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md) — System design, data flow, project structure, and API reference
