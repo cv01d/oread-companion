@@ -52,7 +52,7 @@ export default function ChatPage() {
         : null;
       const sessionName = mode === 'roleplay'
         ? `Chat with ${characterName || 'Character'}`
-        : 'Utility Session';
+        : 'New Chat';
 
       createSession(sessionName, settings);
     }

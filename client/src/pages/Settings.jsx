@@ -13,7 +13,6 @@ import CharacterList from '../components/settings/CharacterList';
 import UtilitySettingsPanel from '../components/settings/UtilitySettingsPanel';
 import UserPersonaPanel from '../components/settings/UserPersonaPanel';
 import GeneralSettingsPanel from '../components/settings/GeneralSettingsPanel';
-import SessionManager from '../components/session/SessionManager';
 import Button from '../components/ui/Button';
 import Dropdown from '../components/ui/Dropdown';
 import { exportSettings, importSettings, copySettingsToClipboard } from '../utils/settingsImportExport';
@@ -201,12 +200,6 @@ export default function Settings() {
           onClick={() => setActiveTab('general')}
         >
           Model
-        </button>
-        <button
-          className={`settings__tab ${activeTab === 'sessions' ? 'settings__tab--active' : ''}`}
-          onClick={() => setActiveTab('sessions')}
-        >
-          Sessions
         </button>
         <button
           className={`settings__tab ${activeTab === 'integrations' ? 'settings__tab--active' : ''}`}
@@ -467,19 +460,6 @@ export default function Settings() {
                 <p><strong>Ollama Library:</strong> llama2, mistral, codellama, etc.</p>
                 <p><strong>HuggingFace:</strong> hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF</p>
               </div>
-            </CollapsibleSection>
-          </div>
-        )}
-
-        {/* Sessions Tab */}
-        {activeTab === 'sessions' && (
-          <div className="settings__tab-content">
-            <CollapsibleSection
-              title="Session Management"
-              description="Create, manage, and switch between conversation sessions"
-              defaultExpanded={true}
-            >
-              <SessionManager />
             </CollapsibleSection>
           </div>
         )}

@@ -165,7 +165,7 @@ body {
   &__actions {
     display: flex;
     align-items: center;
-    gap: $spacing-lg;
+    gap: $spacing-md;
     font-size: 1.2rem;
     color: $color-text-light;
 
@@ -189,6 +189,24 @@ body {
       }
     }
   }
+
+  &__world-switcher,
+  &__chat-switcher,
+  &__model-switcher {
+    background: none !important;
+    border: none !important;
+    padding: $spacing-sm !important;
+    font-size: 13px !important;
+    font-family: 'Montserrat', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+
+    &:hover {
+      color: $color-text-white !important;
+    }
+  }
+
 }
 
 // ============================================
@@ -746,7 +764,7 @@ body {
   background-color: transparent;
   border-top: none;
   box-shadow: none;
-  align-items: center;
+  align-items: flex-end;
 
   .text-field {
     flex: 1;
@@ -759,6 +777,11 @@ body {
     font-family: 'Montserrat', sans-serif;
     font-weight: 400;
     transition: all 0.2s ease;
+    resize: none;
+    overflow-y: auto;
+    max-height: 6.5rem; // ~4 rows then scroll
+    line-height: 1.4;
+    outline: none;
 
     &::placeholder {
       color: $color-text-muted;

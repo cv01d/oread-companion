@@ -1,14 +1,13 @@
-export default function Header({ ollamaStatus = 'checking', currentPage = 'chat', onNavigate }) {
-  const statusClass = [
-    'status',
-    `status--${ollamaStatus}`
-  ].join(' ');
+import { useState } from 'react';
+import useStore from '../../store/useStore';
+import ChatDrawer from '../chat/ChatDrawer';
+import WorldDrawer from '../world/WorldDrawer';
+import ModelDrawer from '../model/ModelDrawer';
 
-  const statusText = {
-    connected: 'Connected',
-    disconnected: 'Disconnected',
-    checking: 'Checking...'
-  }[ollamaStatus] || 'Unknown';
+export default function Header({ ollamaStatus = 'checking', currentPage = 'chat', onNavigate }) {
+  const [activeDrawer, setActiveDrawer] = useState(null);
+
+  const closeDrawer = () => setActiveDrawer(null);
 
   return (
     <header className="header">
@@ -18,8 +17,33 @@ export default function Header({ ollamaStatus = 'checking', currentPage = 'chat'
       <nav className="header__nav">
       </nav>
       <div className="header__actions">
+        <button
+          className="header__world-switcher"
+          onClick={() => setActiveDrawer('world')}
+          title="Switch world"
+        >
+          Switch World
+        </button>
+        <button
+          className="header__chat-switcher"
+          onClick={() => setActiveDrawer('chat')}
+          title="Switch chat"
+        >
+          Switch Chat
+        </button>
+        <button
+          className="header__model-switcher"
+          onClick={() => setActiveDrawer('model')}
+          title="Switch model"
+        >
+          Switch Model
+        </button>
         <button title="Menu" onClick={() => onNavigate('settings')}>⋯</button>
       </div>
+
+      <WorldDrawer isOpen={activeDrawer === 'world'} onClose={closeDrawer} />
+      <ChatDrawer isOpen={activeDrawer === 'chat'} onClose={closeDrawer} />
+      <ModelDrawer isOpen={activeDrawer === 'model'} onClose={closeDrawer} />
     </header>
   );
 }
