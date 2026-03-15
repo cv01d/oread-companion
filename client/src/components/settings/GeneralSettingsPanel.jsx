@@ -118,21 +118,6 @@ export default function GeneralSettingsPanel({ settings, onChange, models = [] }
       <div className="general-settings-panel__section">
         <h4 className="general-settings-panel__section-title">Features</h4>
 
-        <div className="general-settings-panel__field">
-          <label className="general-settings-panel__checkbox-label">
-            <input
-              type="checkbox"
-              checked={general.memory}
-              onChange={(e) => handleFieldChange('memory', e.target.checked)}
-              className="general-settings-panel__checkbox"
-            />
-            <span>Enable Conversation Memory & RAG</span>
-          </label>
-          <p className="general-settings-panel__hint">
-            Save conversations to database and use semantic search for longer chats (50+ messages)
-          </p>
-        </div>
-
         {/* Hidden for now - Future features
         <div className="general-settings-panel__field">
           <label className="general-settings-panel__checkbox-label">

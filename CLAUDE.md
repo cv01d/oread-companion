@@ -1,6 +1,6 @@
 # Oread Chat Interface
 
-Full-stack local AI chat app with Ollama integration. Streaming chat, roleplay/character system, semantic memory (FAISS + embeddings), session management.
+Full-stack local AI chat app with Ollama integration. Streaming chat, roleplay/character system, session management.
 
 **Design**: Dark theme, Montserrat font, teal accent `#4db8a8`, `#1a1a1a` backgrounds.
 
@@ -9,7 +9,6 @@ Full-stack local AI chat app with Ollama integration. Streaming chat, roleplay/c
 - **Backend**: Node.js (ES Modules), Express, SQLite (WAL mode), SSE streaming
 - **Frontend**: React 19, Vite, Zustand, SCSS (`global.scss` + `*.module.scss`)
 - **AI**: Ollama (`ollama` npm package)
-- **Memory**: `nomic-embed-text` embeddings + FAISS vector index per session
 - **Security**: Helmet, express-rate-limit, Joi validation, CSRF tokens, express-session
 
 ## Running
@@ -33,9 +32,7 @@ Settings = a special "active" template at `data/templates/active.json`.
 ```
 sendMessage() → build system prompt (promptBuilder.js) → load characters if needed
   → POST /api/chat { model, messages, systemPrompt, temperature, topP, maxTokens, sessionId, settings }
-  → Backend: >50 msgs + memory? → RAG (recent 20 + top 5 semantic) : full history
   → ollamaService.chat() → SSE stream → save to SQLite
-  → Background: embeddings + extraction (roleplay only, every 5 msgs)
 ```
 
 ### Zustand Store Patterns
@@ -45,7 +42,7 @@ sendMessage() → build system prompt (promptBuilder.js) → load characters if 
 
 ### DB Tables
 - `sessions` — id, name, character_name, mode, settings_snapshot, message_count, archived
-- `messages` — id, session_id, role, content, timestamp, embedded, extracted_data
+- `messages` — id, session_id, role, content, timestamp
 
 ## Adding a New Setting Field
 1. `client/src/data/defaultSettings.js` — add to `DEFAULT_SETTINGS`
@@ -78,7 +75,7 @@ Users can save current settings as a named "world" template. Stored as JSON in `
 8. CSRF bypassed in dev when `ENABLE_AUTH=false` (default). `apiFetch()` handles CSRF token injection
 
 ## Environment Variables
-`PORT` (3001), `OLLAMA_URL` (localhost:11434), `OLLAMA_CHAT_MODEL` (llama2), `OLLAMA_EMBED_MODEL` (nomic-embed-text), `SESSION_SECRET` (auto-gen), `OREAD_ENCRYPTION_PASSPHRASE` (auto-gen, required in prod), `ENABLE_AUTH` (false), `ENABLE_CSRF` (true), `CORS_ORIGINS` (localhost:5173,localhost:3000)
+`PORT` (3001), `OLLAMA_URL` (localhost:11434), `OLLAMA_CHAT_MODEL` (llama2), `SESSION_SECRET` (auto-gen), `OREAD_ENCRYPTION_PASSPHRASE` (auto-gen, required in prod), `ENABLE_AUTH` (false), `ENABLE_CSRF` (true), `CORS_ORIGINS` (localhost:5173,localhost:3000)
 
 ## In-Progress Branches
 - **`cloud-api-integration`** — Adds OpenAI + Anthropic cloud model support alongside Ollama. Provider auto-detected from model name. API keys encrypted (AES-256-GCM) in SQLite `api_keys` table. UI in Settings > Integrations.

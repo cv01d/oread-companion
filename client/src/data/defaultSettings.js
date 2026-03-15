@@ -49,7 +49,6 @@ export const DEFAULT_SETTINGS = {
     selectedModel: null,
     webSearch: false,
     chatSearch: false,
-    memory: true,
     temperature: 0.8,
     topP: 0.9,
     frequencyPenalty: 1.1,

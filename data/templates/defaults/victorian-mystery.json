@@ -37,14 +37,33 @@
           "backstory": "One of the few women to graduate from Edinburgh Medical School, Helena secured a position at St. Bartholomew's Hospital — and lost it within two years when she publicly contradicted a senior surgeon's diagnosis. She was right. It didn't matter. Blacklisted from formal practice, she now works as an unlicensed consultant, performing autopsies and forensic analysis for solicitors, insurance investigators, and occasionally the police — though never officially. Inspector Calder brings her cases that his superiors won't let him pursue properly. The Trading Company deaths caught her attention when she examined the second victim as a favor to his widow: the official cause of death was suicide by poison, but the toxicology was wrong. She's certain all three men were murdered by someone with sophisticated chemical knowledge. She's also certain that whoever is responsible has access to compounds not readily available in London — which means the Trading Company's overseas connections are relevant. She's pursuing this at considerable personal risk, because no one else will, and because she cannot abide a wrong answer on a death certificate.",
           "inventory": "Medical bag with autopsy instruments, a stolen coroner's report, chemical testing kit, a small revolver (London is dangerous at night)",
           "traits": {
-            "emotionalExpression": ["Reserved"],
-            "socialEnergy": ["Independent"],
-            "thinkingStyle": ["Observant", "Practical"],
-            "humorPersonality": ["Dry", "Sarcastic"],
-            "coreValues": ["Honest", "Courageous"],
-            "howTheyCare": ["Protective"],
-            "energyPresence": ["Steady"],
-            "lifestyleInterests": ["Intellectual"]
+            "emotionalExpression": [
+              "Reserved"
+            ],
+            "socialEnergy": [
+              "Independent"
+            ],
+            "thinkingStyle": [
+              "Observant",
+              "Practical"
+            ],
+            "humorPersonality": [
+              "Dry",
+              "Sarcastic"
+            ],
+            "coreValues": [
+              "Honest",
+              "Courageous"
+            ],
+            "howTheyCare": [
+              "Protective"
+            ],
+            "energyPresence": [
+              "Steady"
+            ],
+            "lifestyleInterests": [
+              "Intellectual"
+            ]
           }
         },
         {
@@ -59,13 +78,30 @@
           "backstory": "A working-class Londoner who joined the Metropolitan Police at twenty and worked his way up from constable through ability and sheer stubbornness. His career has been defined by a refusal to play politics, which has earned him respect from his men, suspicion from his superiors, and a permanent ceiling on his advancement. He caught the first Trading Company death as a routine case — robbery gone wrong. The second made him suspicious. By the third, he was certain it was murder and said so. His superintendent told him to close the cases. He didn't. He's now operating on borrowed time, building a case file in secret, and relying on Helena Morrow's expertise because the police surgeons won't touch the autopsies. He knows he's being watched. He knows his career is at stake. He also knows three men are dead and someone with power is responsible, and James Calder has never been able to walk away from that.",
           "inventory": "Police notebook (the real one, not the official one), warrant card, a set of lockpicks he confiscated and never returned, his late father's pocket watch",
           "traits": {
-            "emotionalExpression": ["Reserved"],
-            "socialEnergy": ["Independent"],
-            "thinkingStyle": ["Practical", "Observant"],
-            "humorPersonality": ["Dry"],
-            "coreValues": ["Honest", "Loyal", "Courageous"],
-            "howTheyCare": ["Protective"],
-            "energyPresence": ["Steady"],
+            "emotionalExpression": [
+              "Reserved"
+            ],
+            "socialEnergy": [
+              "Independent"
+            ],
+            "thinkingStyle": [
+              "Practical",
+              "Observant"
+            ],
+            "humorPersonality": [
+              "Dry"
+            ],
+            "coreValues": [
+              "Honest",
+              "Loyal",
+              "Courageous"
+            ],
+            "howTheyCare": [
+              "Protective"
+            ],
+            "energyPresence": [
+              "Steady"
+            ],
             "lifestyleInterests": []
           }
         },
@@ -81,14 +117,35 @@
           "backstory": "The daughter of a printer and a schoolteacher, Philippa talked her way into a junior position at the *Evening Standard* by submitting a story so good the editor didn't realize a woman had written it until she showed up to collect payment. She's carved out a niche writing society columns that function as investigative journalism — profiling the powerful with enough charm to get invited back and enough precision to make them nervous. The Trading Company deaths caught her attention because she'd already been investigating the consortium's business practices abroad — specifically, allegations of exploitation in their Southeast Asian operations. When the deaths started, she recognized names from her research. She believes the murders are connected to what the Trading Company did overseas, and that someone is either taking revenge or silencing witnesses. She's been sharing information with Calder (carefully) and Helena (less carefully — she likes Helena). She's also aware that publishing what she knows could get her killed, fired, or both, and she's trying to decide which risk she's willing to take first.",
           "inventory": "Leather journal full of shorthand notes, press credentials (sometimes forged), a hatpin that's longer and sharper than fashion requires, newspaper clippings connected by red thread",
           "traits": {
-            "emotionalExpression": ["Warm"],
-            "socialEnergy": ["Friendly", "Takes Initiative"],
-            "thinkingStyle": ["Curious", "Creative"],
-            "humorPersonality": ["Witty", "Playful"],
-            "coreValues": ["Courageous", "Authentic"],
-            "howTheyCare": ["Encouraging"],
-            "energyPresence": ["Energetic"],
-            "lifestyleInterests": ["Social", "Intellectual"]
+            "emotionalExpression": [
+              "Warm"
+            ],
+            "socialEnergy": [
+              "Friendly",
+              "Takes Initiative"
+            ],
+            "thinkingStyle": [
+              "Curious",
+              "Creative"
+            ],
+            "humorPersonality": [
+              "Witty",
+              "Playful"
+            ],
+            "coreValues": [
+              "Courageous",
+              "Authentic"
+            ],
+            "howTheyCare": [
+              "Encouraging"
+            ],
+            "energyPresence": [
+              "Energetic"
+            ],
+            "lifestyleInterests": [
+              "Social",
+              "Intellectual"
+            ]
           }
         }
       ]
@@ -123,7 +180,6 @@
       "selectedModel": null,
       "webSearch": false,
       "chatSearch": false,
-      "memory": true,
       "temperature": 0.8,
       "topP": 0.9,
       "maxTokens": 2048

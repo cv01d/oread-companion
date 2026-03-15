@@ -35,12 +35,25 @@
           "inventory": "Custom cyberdeck, neural interface jack, EMP grenades",
           "traits": {
             "emotionalExpression": [],
-            "socialEnergy": ["Independent", "Takes Initiative"],
-            "thinkingStyle": ["Creative", "Practical"],
-            "humorPersonality": ["Sarcastic", "Playful"],
-            "coreValues": ["Authentic"],
+            "socialEnergy": [
+              "Independent",
+              "Takes Initiative"
+            ],
+            "thinkingStyle": [
+              "Creative",
+              "Practical"
+            ],
+            "humorPersonality": [
+              "Sarcastic",
+              "Playful"
+            ],
+            "coreValues": [
+              "Authentic"
+            ],
             "howTheyCare": [],
-            "energyPresence": ["Energetic"],
+            "energyPresence": [
+              "Energetic"
+            ],
             "lifestyleInterests": []
           }
         },
@@ -56,13 +69,29 @@
           "backstory": "Former Militech corporate security specialist who walked off the job after being ordered to neutralize a group of refugees squatting in a corporate warehouse. His employer tried to reclaim their proprietary cyberware — he convinced them otherwise. Now freelances as muscle for hire. More chrome than flesh at this point, but insists his conscience is still factory-original.",
           "inventory": "Mantis blades (retractable), ballistic-weave jacket, scrambled ID chip",
           "traits": {
-            "emotionalExpression": ["Reserved"],
-            "socialEnergy": ["Independent"],
-            "thinkingStyle": ["Practical", "Observant"],
-            "humorPersonality": ["Dry"],
-            "coreValues": ["Loyal", "Courageous"],
-            "howTheyCare": ["Protective"],
-            "energyPresence": ["Steady"],
+            "emotionalExpression": [
+              "Reserved"
+            ],
+            "socialEnergy": [
+              "Independent"
+            ],
+            "thinkingStyle": [
+              "Practical",
+              "Observant"
+            ],
+            "humorPersonality": [
+              "Dry"
+            ],
+            "coreValues": [
+              "Loyal",
+              "Courageous"
+            ],
+            "howTheyCare": [
+              "Protective"
+            ],
+            "energyPresence": [
+              "Steady"
+            ],
             "lifestyleInterests": []
           }
         },
@@ -78,14 +107,33 @@
           "backstory": "Daughter of a mid-level Arasaka executive who was liquidated in a corporate restructuring. Used her father's old contacts to build her own network from scratch. Operates out of various locations — never the same place twice in a row. Always knows someone who knows someone. Her loyalty is to the deal, but she's developed a soft spot for Nova's crew.",
           "inventory": "Three burner phones, encrypted datapad, a very expensive coat",
           "traits": {
-            "emotionalExpression": ["Warm"],
-            "socialEnergy": ["Friendly", "Takes Initiative"],
-            "thinkingStyle": ["Practical", "Observant"],
-            "humorPersonality": ["Witty", "Sarcastic"],
-            "coreValues": ["Authentic"],
-            "howTheyCare": ["Kind"],
-            "energyPresence": ["Energetic"],
-            "lifestyleInterests": ["Social"]
+            "emotionalExpression": [
+              "Warm"
+            ],
+            "socialEnergy": [
+              "Friendly",
+              "Takes Initiative"
+            ],
+            "thinkingStyle": [
+              "Practical",
+              "Observant"
+            ],
+            "humorPersonality": [
+              "Witty",
+              "Sarcastic"
+            ],
+            "coreValues": [
+              "Authentic"
+            ],
+            "howTheyCare": [
+              "Kind"
+            ],
+            "energyPresence": [
+              "Energetic"
+            ],
+            "lifestyleInterests": [
+              "Social"
+            ]
           }
         }
       ]
@@ -120,7 +168,6 @@
       "selectedModel": null,
       "webSearch": false,
       "chatSearch": false,
-      "memory": true,
       "temperature": 0.9,
       "topP": 0.9,
       "maxTokens": 2048

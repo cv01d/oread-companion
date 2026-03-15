@@ -272,26 +272,11 @@ const useStore = create((set, get) => ({
       const data = await response.json();
 
       if (data.success) {
-        // Filter out embedding models (nomic-embed-text and other embedding-only models)
-        const chatModels = data.models.filter(model => {
-          const modelName = model.name.toLowerCase();
-          // Exclude models that are specifically embedding models
-          // nomic-embed-text is used for RAG embeddings only, not chat
-          const isEmbeddingModel =
-            modelName.includes('nomic-embed') ||
-            modelName.includes('all-minilm') ||
-            modelName.includes('bge-') ||
-            modelName === 'mxbai-embed-large' ||
-            (modelName.includes('embed') && !modelName.includes('llama') && !modelName.includes('mistral'));
-
-          return !isEmbeddingModel;
-        });
-
-        set({ models: chatModels });
+        set({ models: data.models });
 
         // Auto-select first model if none selected
         const state = get();
-        const firstModel = chatModels.length > 0 ? chatModels[0].name : null;
+        const firstModel = data.models.length > 0 ? data.models[0].name : null;
         if (!state.selectedModel && firstModel) {
           set({ selectedModel: firstModel });
         }
@@ -582,113 +567,6 @@ const useStore = create((set, get) => ({
       //console.error('Failed to load message history:', error);
       set({ historyLoading: false });
     }
-  },
-
-  // ==========================================
-  // RAG / VECTOR CONTEXT STATE
-  // ==========================================
-  vectorContext: [],
-  contextLoading: false,
-
-  setVectorContext: (context) => set({ vectorContext: context }),
-  setContextLoading: (loading) => set({ contextLoading: loading }),
-
-  // Load vector context for query
-  loadVectorContext: async (sessionId, query) => {
-    set({ contextLoading: true });
-
-    try {
-      const response = await apiFetch('/api/memory/search', {
-        method: 'POST',
-        body: JSON.stringify({ sessionId, query, topK: 5 })
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        set({
-          vectorContext: data.results || [],
-          contextLoading: false
-        });
-        //console.log(`✅ Found ${data.results.length} relevant context items`);
-      }
-    } catch (error) {
-      //console.error('Failed to load vector context:', error);
-      set({ contextLoading: false });
-    }
-  },
-
-  // ==========================================
-  // AUTO-EXTRACTION STATE
-  // ==========================================
-  extractedSuggestions: null,
-  extractionLoading: false,
-
-  setExtractedSuggestions: (suggestions) => set({ extractedSuggestions: suggestions }),
-  setExtractionLoading: (loading) => set({ extractionLoading: loading }),
-
-  // Analyze for updates (trigger extraction)
-  analyzeForUpdates: async (sessionId) => {
-    const state = get();
-    set({ extractionLoading: true });
-
-    try {
-      const response = await apiFetch(`/api/sessions/${sessionId}/analyze`, {
-        method: 'POST',
-        body: JSON.stringify({ settings: state.settings })
-      });
-
-      const data = await response.json();
-      if (data.success && data.proposed_updates.length > 0) {
-        set({
-          extractedSuggestions: data.proposed_updates,
-          extractionLoading: false
-        });
-        //console.log(`✅ Found ${data.proposed_updates.length} suggestions`);
-      } else {
-        set({ extractionLoading: false });
-      }
-    } catch (error) {
-      //console.error('Failed to analyze for updates:', error);
-      set({ extractionLoading: false });
-    }
-  },
-
-  // Apply extracted updates to settings
-  applyExtractedUpdates: (updates) => {
-    const state = get();
-    const updatedSettings = JSON.parse(JSON.stringify(state.settings)); // Deep clone
-
-    for (const update of updates) {
-      const { category, addition } = update;
-
-      if (!updatedSettings.roleplay?.singleCharacter?.core) {
-        continue;
-      }
-
-      const core = updatedSettings.roleplay.singleCharacter.core;
-
-      switch (category) {
-        case 'personality':
-          core.personality = core.personality
-            ? `${core.personality}; ${addition}`
-            : addition;
-          break;
-        case 'backstory':
-          core.backstory = core.backstory
-            ? `${core.backstory}\n\n${addition}`
-            : addition;
-          break;
-        case 'knowledge':
-          core.knowledge = core.knowledge
-            ? `${core.knowledge}; ${addition}`
-            : addition;
-          break;
-      }
-    }
-
-    state.setSettings(updatedSettings);
-    set({ extractedSuggestions: null });
-    //console.log('✅ Applied extracted updates to settings');
   },
 
   // ==========================================

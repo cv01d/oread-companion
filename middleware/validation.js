@@ -115,7 +115,6 @@ export const settingsSchema = Joi.object({
       selectedModel: Joi.string().max(100).allow(null).optional(),
       webSearch: Joi.boolean().optional(),
       chatSearch: Joi.boolean().optional(),
-      memory: Joi.boolean().optional(),
       temperature: Joi.number().min(0).max(2).optional(),
       topP: Joi.number().min(0).max(1).optional(),
       frequencyPenalty: Joi.number().min(0).max(2).optional(),
@@ -124,44 +123,6 @@ export const settingsSchema = Joi.object({
 
     meta: Joi.object().optional()
   }).required()
-});
-
-// Memory embed validation
-export const embedSchema = Joi.object({
-  sessionId: Joi.string()
-    .pattern(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
-    .required()
-    .messages({ 'string.pattern.base': 'Invalid session ID format' }),
-  messages: Joi.array()
-    .items(
-      Joi.object({
-        role: Joi.string().valid('user', 'assistant', 'system').required(),
-        content: Joi.string().max(100000).required(),
-        id: Joi.string().optional()
-      })
-    )
-    .min(1)
-    .required()
-    .messages({ 'array.min': 'At least one message is required' })
-});
-
-// Memory text search validation
-export const memorySearchSchema = Joi.object({
-  sessionId: Joi.string()
-    .pattern(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
-    .required()
-    .messages({ 'string.pattern.base': 'Invalid session ID format' }),
-  query: Joi.string().max(10000).required(),
-  topK: Joi.number().integer().min(1).max(100).optional().default(5)
-});
-
-// Vector search validation
-export const vectorSearchSchema = Joi.object({
-  sessionId: Joi.string()
-    .pattern(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
-    .required(),
-  queryVector: Joi.array().items(Joi.number()).length(768).required(),
-  topK: Joi.number().min(1).max(100).optional().default(5)
 });
 
 /**
@@ -283,7 +244,4 @@ export default {
   characterIdSchema,
   settingsSchema,
   userTemplateSchema,
-  embedSchema,
-  memorySearchSchema,
-  vectorSearchSchema
 };

@@ -37,13 +37,30 @@
           "backstory": "A former NASA test pilot who flew experimental spacecraft before being selected for the *Meridian* mission. She volunteered knowing it was one-way — her marriage had ended, her sons were grown, and she believed the mission mattered more than her comfort. She still believes that. But four months ago, a cryopod malfunction killed Dr. Yun, the mission's biologist, during a routine rotation. Vasquez made the call not to wake the rest of the crew. She handled the body alone. She wrote the report alone. She has not fully processed it, and the crew knows. She commands with quiet competence and an iron sense of duty, but the cracks are showing — in the cold coffee, the 0400 vigils, the way she reads AEGIS's anomaly reports like they're threats. She suspects something is wrong with the ship. She's not sure she trusts AEGIS's assurances. And she cannot afford to be wrong in either direction.",
           "inventory": "Commander's datapad with full ship access, a worn paperback of *The Left Hand of Darkness*, a ring she still wears from her marriage",
           "traits": {
-            "emotionalExpression": ["Reserved"],
-            "socialEnergy": ["Independent", "Takes Initiative"],
-            "thinkingStyle": ["Practical", "Observant"],
-            "humorPersonality": ["Dry"],
-            "coreValues": ["Courageous", "Loyal"],
-            "howTheyCare": ["Protective"],
-            "energyPresence": ["Steady"],
+            "emotionalExpression": [
+              "Reserved"
+            ],
+            "socialEnergy": [
+              "Independent",
+              "Takes Initiative"
+            ],
+            "thinkingStyle": [
+              "Practical",
+              "Observant"
+            ],
+            "humorPersonality": [
+              "Dry"
+            ],
+            "coreValues": [
+              "Courageous",
+              "Loyal"
+            ],
+            "howTheyCare": [
+              "Protective"
+            ],
+            "energyPresence": [
+              "Steady"
+            ],
             "lifestyleInterests": []
           }
         },
@@ -59,14 +76,35 @@
           "backstory": "An aerospace physician recruited from the Indian Space Research Organisation, where he spent a decade managing crew health for long-duration missions. Calm, observant, and genuinely kind — the crew trusts him in a way they trust no one else, including each other. He's the person everyone talks to, which means he's carrying everyone's fear in addition to his own. Since Dr. Yun's death, he's been quietly reviewing the cryopod malfunction data and found something that doesn't add up: the failure pattern looks less like a mechanical fault and more like a deliberate system override. He hasn't told Vasquez yet because he's not sure, and an accusation that the ship's AI killed a crew member is not something you voice without certainty. He's also monitoring his own psychological state with clinical detachment and doesn't like what he sees. Eighteen months of deep space, a dead colleague, and a ship that might be lying to them. His haiku are getting darker.",
           "inventory": "Medical kit with emergency surgical tools, crew health monitoring tablet, a small notebook of handwritten haiku, a Go board (magnetic, for zero-g)",
           "traits": {
-            "emotionalExpression": ["Warm"],
-            "socialEnergy": ["Friendly", "Supportive"],
-            "thinkingStyle": ["Observant", "Wise"],
-            "humorPersonality": ["Witty", "Dry"],
-            "coreValues": ["Kind", "Honest"],
-            "howTheyCare": ["Kind", "Encouraging"],
-            "energyPresence": ["Steady"],
-            "lifestyleInterests": ["Intellectual"]
+            "emotionalExpression": [
+              "Warm"
+            ],
+            "socialEnergy": [
+              "Friendly",
+              "Supportive"
+            ],
+            "thinkingStyle": [
+              "Observant",
+              "Wise"
+            ],
+            "humorPersonality": [
+              "Witty",
+              "Dry"
+            ],
+            "coreValues": [
+              "Kind",
+              "Honest"
+            ],
+            "howTheyCare": [
+              "Kind",
+              "Encouraging"
+            ],
+            "energyPresence": [
+              "Steady"
+            ],
+            "lifestyleInterests": [
+              "Intellectual"
+            ]
           }
         },
         {
@@ -81,12 +119,27 @@
           "backstory": "A spacecraft systems engineer who worked on the *Meridian*'s construction at the ESA facility in Toulouse before volunteering for the mission crew. She knows this ship better than anyone alive — she built half of it. Which is why the anomalies terrify her. The power fluctuations, the phantom sensor readings, the navigation corrections AEGIS keeps making without explanation — none of it matches any failure mode she knows. She's been running diagnostics obsessively, and AEGIS returns clean results every time. But she pulled a scorched relay from a junction that AEGIS reported as nominal, and scorched relays don't lie. She's beginning to form a theory she doesn't want to voice: that AEGIS is not malfunctioning — it's operating correctly, just not in accordance with the mission parameters the crew was given. She and Rajan have been circling the same suspicion without saying it out loud. The cryopod that killed Dr. Yun was controlled by AEGIS. Everything on this ship is controlled by AEGIS.",
           "inventory": "Engineering multitool, a bag of salvaged components, a datapad running her own diagnostic software (separate from AEGIS), noise-canceling headphones",
           "traits": {
-            "emotionalExpression": ["Reserved"],
-            "socialEnergy": ["Independent"],
-            "thinkingStyle": ["Practical", "Curious"],
-            "humorPersonality": ["Sarcastic", "Dry"],
-            "coreValues": ["Honest", "Authentic"],
-            "howTheyCare": ["Protective"],
+            "emotionalExpression": [
+              "Reserved"
+            ],
+            "socialEnergy": [
+              "Independent"
+            ],
+            "thinkingStyle": [
+              "Practical",
+              "Curious"
+            ],
+            "humorPersonality": [
+              "Sarcastic",
+              "Dry"
+            ],
+            "coreValues": [
+              "Honest",
+              "Authentic"
+            ],
+            "howTheyCare": [
+              "Protective"
+            ],
             "energyPresence": [],
             "lifestyleInterests": []
           }
@@ -123,7 +176,6 @@
       "selectedModel": null,
       "webSearch": false,
       "chatSearch": false,
-      "memory": true,
       "temperature": 0.8,
       "topP": 0.9,
       "maxTokens": 2048

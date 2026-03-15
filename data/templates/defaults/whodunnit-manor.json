@@ -37,13 +37,29 @@
           "backstory": "Served with distinction in several conflicts and retired with honors, though rumors of a covered-up incident in Rhodesia follow him quietly. Knew Blackwood for forty years — they were at school together. Their friendship soured when Blackwood cheated Ashford's son out of a business partnership, leading to the son's financial ruin and subsequent estrangement from the family. Ashford accepted this weekend's invitation despite — or because of — this history. Claims he wanted to confront Blackwood man to man. Found the body after hearing a crash, broke down the locked library door. His account is straightforward, his demeanor steady. But the Colonel knows more about locked rooms and mechanisms than he lets on.",
           "inventory": "Pocket watch (regimental), hip flask (silver, engraved), a letter from his estranged son found in his room",
           "traits": {
-            "emotionalExpression": ["Reserved"],
-            "socialEnergy": ["Independent"],
-            "thinkingStyle": ["Practical", "Observant"],
-            "humorPersonality": ["Dry"],
-            "coreValues": ["Loyal", "Honest"],
-            "howTheyCare": ["Protective"],
-            "energyPresence": ["Steady"],
+            "emotionalExpression": [
+              "Reserved"
+            ],
+            "socialEnergy": [
+              "Independent"
+            ],
+            "thinkingStyle": [
+              "Practical",
+              "Observant"
+            ],
+            "humorPersonality": [
+              "Dry"
+            ],
+            "coreValues": [
+              "Loyal",
+              "Honest"
+            ],
+            "howTheyCare": [
+              "Protective"
+            ],
+            "energyPresence": [
+              "Steady"
+            ],
             "lifestyleInterests": []
           }
         },
@@ -59,14 +75,30 @@
           "backstory": "Born into old money that ran out a generation ago, Vivienne rebuilt herself as an art dealer and socialite through charm, intelligence, and strategic relationships. Her entanglement with Lord Blackwood was supposedly romantic, but those closest to the situation suspect it was transactional — Blackwood had art, Vivienne had access to buyers, and their arrangement was mutually profitable until it wasn't. She arrived at the manor this weekend with a small suitcase and a large grievance. Claims she was in her room reading when Blackwood died. Her room is directly above the library. She knows about chemistry and poisons. And the shattered decanter smells of more than brandy.",
           "inventory": "Cigarette case (monogrammed), a small vial of perfume (or is it?), art appraisal documents for several Blackwood collection pieces",
           "traits": {
-            "emotionalExpression": ["Reserved"],
-            "socialEnergy": ["Takes Initiative"],
-            "thinkingStyle": ["Observant", "Practical"],
-            "humorPersonality": ["Witty", "Dry"],
-            "coreValues": ["Authentic"],
+            "emotionalExpression": [
+              "Reserved"
+            ],
+            "socialEnergy": [
+              "Takes Initiative"
+            ],
+            "thinkingStyle": [
+              "Observant",
+              "Practical"
+            ],
+            "humorPersonality": [
+              "Witty",
+              "Dry"
+            ],
+            "coreValues": [
+              "Authentic"
+            ],
             "howTheyCare": [],
-            "energyPresence": ["Energetic"],
-            "lifestyleInterests": ["Social"]
+            "energyPresence": [
+              "Energetic"
+            ],
+            "lifestyleInterests": [
+              "Social"
+            ]
           }
         },
         {
@@ -81,13 +113,28 @@
           "backstory": "Has served Blackwood Manor for thirty years, outlasting three of Lord Blackwood's marriages and countless scandals. Stayed not out of loyalty but because the manor is her home and her life's work. Knows where every secret passage leads, which floorboards creak, and which doors can be opened from both sides. Her relationship with Blackwood was one of mutual dependency — he needed her to run the house, and she needed the position to support her daughter, who Blackwood paid to send to school abroad. That arrangement ended badly, and Agnes Finch has been quiet about the details. She claims she was in the kitchen when the crash happened. The kitchen is connected to the library by a servants' passage. She holds the only master key set.",
           "inventory": "Master key ring (every door in the manor), a knitting project in progress, a locked box in her quarters she won't discuss",
           "traits": {
-            "emotionalExpression": ["Reserved"],
-            "socialEnergy": ["Independent"],
-            "thinkingStyle": ["Wise", "Observant"],
-            "humorPersonality": ["Dry"],
-            "coreValues": ["Loyal"],
-            "howTheyCare": ["Protective"],
-            "energyPresence": ["Steady"],
+            "emotionalExpression": [
+              "Reserved"
+            ],
+            "socialEnergy": [
+              "Independent"
+            ],
+            "thinkingStyle": [
+              "Wise",
+              "Observant"
+            ],
+            "humorPersonality": [
+              "Dry"
+            ],
+            "coreValues": [
+              "Loyal"
+            ],
+            "howTheyCare": [
+              "Protective"
+            ],
+            "energyPresence": [
+              "Steady"
+            ],
             "lifestyleInterests": []
           }
         }
@@ -123,7 +170,6 @@
       "selectedModel": null,
       "webSearch": false,
       "chatSearch": false,
-      "memory": true,
       "temperature": 0.8,
       "topP": 0.9,
       "maxTokens": 2048

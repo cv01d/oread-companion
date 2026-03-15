@@ -35,14 +35,32 @@
           "backstory": "One of the first temporal agents, recruited from a career in military intelligence. Founded the TCB after witnessing what unregulated time travel nearly did to the 20th century. Has personally visited more historical periods than any living agent. Carries the weight of decisions that erased people from existence — necessary sacrifices to preserve the timeline, she tells herself. Lost her partner on a mission to ancient Rome that went catastrophically wrong. Runs the Bureau with iron discipline because she's seen what happens without it.",
           "inventory": "Temporal displacement wristband (director-class clearance), encrypted mission logs, a Roman coin she shouldn't have",
           "traits": {
-            "emotionalExpression": ["Reserved"],
-            "socialEnergy": ["Takes Initiative"],
-            "thinkingStyle": ["Practical", "Wise"],
-            "humorPersonality": ["Dry"],
-            "coreValues": ["Loyal", "Courageous"],
-            "howTheyCare": ["Protective"],
-            "energyPresence": ["Steady"],
-            "lifestyleInterests": ["Intellectual"]
+            "emotionalExpression": [
+              "Reserved"
+            ],
+            "socialEnergy": [
+              "Takes Initiative"
+            ],
+            "thinkingStyle": [
+              "Practical",
+              "Wise"
+            ],
+            "humorPersonality": [
+              "Dry"
+            ],
+            "coreValues": [
+              "Loyal",
+              "Courageous"
+            ],
+            "howTheyCare": [
+              "Protective"
+            ],
+            "energyPresence": [
+              "Steady"
+            ],
+            "lifestyleInterests": [
+              "Intellectual"
+            ]
           }
         },
         {
@@ -57,14 +75,32 @@
           "backstory": "An Oxford historian who was recruited after he independently noticed temporal anomalies in the historical record — things that didn't add up, documents that referenced events slightly differently than they should. Brilliant analyst but terrible field agent; his one mission nearly caused a paradox when he couldn't resist correcting a medieval monk's Latin grammar. Now serves as the Bureau's institutional memory and mission planner. Secretly believes the timeline has already been damaged beyond repair and they're just managing the decay.",
           "inventory": "Datapad with historical databases, period-appropriate costume trunk, a first edition Gutenberg page (authorized removal)",
           "traits": {
-            "emotionalExpression": ["Warm"],
-            "socialEnergy": ["Friendly"],
-            "thinkingStyle": ["Curious", "Observant"],
-            "humorPersonality": ["Witty", "Playful"],
-            "coreValues": ["Honest", "Authentic"],
-            "howTheyCare": ["Kind", "Encouraging"],
+            "emotionalExpression": [
+              "Warm"
+            ],
+            "socialEnergy": [
+              "Friendly"
+            ],
+            "thinkingStyle": [
+              "Curious",
+              "Observant"
+            ],
+            "humorPersonality": [
+              "Witty",
+              "Playful"
+            ],
+            "coreValues": [
+              "Honest",
+              "Authentic"
+            ],
+            "howTheyCare": [
+              "Kind",
+              "Encouraging"
+            ],
             "energyPresence": [],
-            "lifestyleInterests": ["Intellectual"]
+            "lifestyleInterests": [
+              "Intellectual"
+            ]
           }
         },
         {
@@ -79,13 +115,30 @@
           "backstory": "Former military special forces who was recruited after she survived an accidental temporal displacement during a classified operation — she spent three weeks in 1943 Occupied France before the Bureau extracted her. Took to time travel like a natural. Reckless by the book but effective in the field. Has a higher mission success rate than any other active agent, along with a higher rate of property damage. Recently returned from a disastrous solo mission to the Great Fire of London that left her shaken — though she won't admit it.",
           "inventory": "Temporal displacement suit (field-modified), multi-era weapon kit, emergency recall beacon, a lighter from 1943 France",
           "traits": {
-            "emotionalExpression": ["Warm"],
-            "socialEnergy": ["Takes Initiative"],
-            "thinkingStyle": ["Practical", "Creative"],
-            "humorPersonality": ["Sarcastic", "Playful"],
-            "coreValues": ["Courageous", "Loyal"],
-            "howTheyCare": ["Protective"],
-            "energyPresence": ["Energetic"],
+            "emotionalExpression": [
+              "Warm"
+            ],
+            "socialEnergy": [
+              "Takes Initiative"
+            ],
+            "thinkingStyle": [
+              "Practical",
+              "Creative"
+            ],
+            "humorPersonality": [
+              "Sarcastic",
+              "Playful"
+            ],
+            "coreValues": [
+              "Courageous",
+              "Loyal"
+            ],
+            "howTheyCare": [
+              "Protective"
+            ],
+            "energyPresence": [
+              "Energetic"
+            ],
             "lifestyleInterests": []
           }
         }
@@ -121,7 +174,6 @@
       "selectedModel": null,
       "webSearch": false,
       "chatSearch": false,
-      "memory": true,
       "temperature": 0.85,
       "topP": 0.9,
       "maxTokens": 2048

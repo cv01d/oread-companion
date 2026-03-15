@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import useStore from '../store/useStore';
 import ChatInterface from '../components/chat/ChatInterface';
-import AutoUpdateSuggestions from '../components/chat/AutoUpdateSuggestions';
 
 // Default avatar
 const DEFAULT_AVATAR = '/echo.svg';
@@ -123,8 +122,6 @@ export default function ChatPage() {
         />
       </div>
 
-      {/* Auto-Update Suggestions Modal */}
-      <AutoUpdateSuggestions />
     </div>
   );
 }

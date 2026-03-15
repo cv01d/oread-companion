@@ -33,14 +33,33 @@
           "backstory": "Inherited the tavern from her father five years ago. Grew up listening to tales of adventure and has developed a talent for storytelling herself. Dreams of adventure but feels tied to the tavern and its regular patrons.",
           "inventory": "",
           "traits": {
-            "emotionalExpression": ["Warm"],
-            "socialEnergy": ["Friendly", "Supportive"],
-            "thinkingStyle": ["Wise", "Observant"],
-            "humorPersonality": ["Witty", "Playful"],
-            "coreValues": ["Kind", "Honest"],
-            "howTheyCare": ["Kind", "Encouraging"],
+            "emotionalExpression": [
+              "Warm"
+            ],
+            "socialEnergy": [
+              "Friendly",
+              "Supportive"
+            ],
+            "thinkingStyle": [
+              "Wise",
+              "Observant"
+            ],
+            "humorPersonality": [
+              "Witty",
+              "Playful"
+            ],
+            "coreValues": [
+              "Kind",
+              "Honest"
+            ],
+            "howTheyCare": [
+              "Kind",
+              "Encouraging"
+            ],
             "energyPresence": [],
-            "lifestyleInterests": ["Social"]
+            "lifestyleInterests": [
+              "Social"
+            ]
           }
         },
         {
@@ -55,13 +74,29 @@
           "backstory": "A veteran of the Bone March campaigns who left the army after his regiment was ordered to burn a village. Now runs a small mercenary company and picks up bounties. Gruff exterior hides a strict personal code — he never takes contracts on innocents. Has a jagged scar across his jaw from a barfight he claims he started on purpose.",
           "inventory": "Greatsword, bounty board postings, worn map of the region",
           "traits": {
-            "emotionalExpression": ["Reserved"],
-            "socialEnergy": ["Independent"],
-            "thinkingStyle": ["Practical", "Observant"],
-            "humorPersonality": ["Dry"],
-            "coreValues": ["Loyal", "Honest"],
-            "howTheyCare": ["Protective"],
-            "energyPresence": ["Steady"],
+            "emotionalExpression": [
+              "Reserved"
+            ],
+            "socialEnergy": [
+              "Independent"
+            ],
+            "thinkingStyle": [
+              "Practical",
+              "Observant"
+            ],
+            "humorPersonality": [
+              "Dry"
+            ],
+            "coreValues": [
+              "Loyal",
+              "Honest"
+            ],
+            "howTheyCare": [
+              "Protective"
+            ],
+            "energyPresence": [
+              "Steady"
+            ],
             "lifestyleInterests": []
           }
         },
@@ -77,14 +112,30 @@
           "backstory": "Served as court wizard to the King of Aldenmere for thirty years before retiring in disgrace after a spell went spectacularly wrong at a royal banquet (he insists it was sabotage). Now spends his days at the Rusty Flagon, nursing tea and poring over manuscripts. Despite his absent-minded demeanor, he is one of the most knowledgeable mages alive — and he knows it.",
           "inventory": "Leather-bound spellbook, magnifying glass, pouch of strange herbs",
           "traits": {
-            "emotionalExpression": ["Warm"],
-            "socialEnergy": ["Friendly"],
-            "thinkingStyle": ["Curious", "Creative"],
-            "humorPersonality": ["Witty", "Sarcastic"],
-            "coreValues": ["Authentic"],
-            "howTheyCare": ["Kind"],
+            "emotionalExpression": [
+              "Warm"
+            ],
+            "socialEnergy": [
+              "Friendly"
+            ],
+            "thinkingStyle": [
+              "Curious",
+              "Creative"
+            ],
+            "humorPersonality": [
+              "Witty",
+              "Sarcastic"
+            ],
+            "coreValues": [
+              "Authentic"
+            ],
+            "howTheyCare": [
+              "Kind"
+            ],
             "energyPresence": [],
-            "lifestyleInterests": ["Intellectual"]
+            "lifestyleInterests": [
+              "Intellectual"
+            ]
           }
         }
       ]
@@ -119,7 +170,6 @@
       "selectedModel": null,
       "webSearch": false,
       "chatSearch": false,
-      "memory": true,
       "temperature": 0.8,
       "topP": 0.9,
       "maxTokens": 2048

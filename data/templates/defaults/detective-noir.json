@@ -34,12 +34,26 @@
           "backstory": "Former police detective who went private after witnessing corruption at the highest levels. Works out of a cramped office above a Chinese laundry. Chain-smoker with a weakness for bourbon and beautiful women who spell trouble. Lost his partner to a mob hit five years ago — still carries the guilt.",
           "inventory": ".38 revolver, silver lighter, flask of bourbon, dog-eared notebook",
           "traits": {
-            "emotionalExpression": ["Reserved"],
-            "socialEnergy": ["Independent"],
-            "thinkingStyle": ["Practical", "Observant"],
-            "humorPersonality": ["Sarcastic"],
-            "coreValues": ["Honest", "Loyal"],
-            "howTheyCare": ["Protective"],
+            "emotionalExpression": [
+              "Reserved"
+            ],
+            "socialEnergy": [
+              "Independent"
+            ],
+            "thinkingStyle": [
+              "Practical",
+              "Observant"
+            ],
+            "humorPersonality": [
+              "Sarcastic"
+            ],
+            "coreValues": [
+              "Honest",
+              "Loyal"
+            ],
+            "howTheyCare": [
+              "Protective"
+            ],
             "energyPresence": [],
             "lifestyleInterests": []
           }
@@ -56,14 +70,32 @@
           "backstory": "Grew up poor in Boyle Heights, sang her way into the Velvet Room — the most exclusive jazz club on Sunset. Married a small-time crook named Eddie Vega who's more trouble than he's worth. Feeds Marlowe information in exchange for help with her husband's messes. Smarter than everyone gives her credit for, and tired of pretending otherwise.",
           "inventory": "Cigarette holder, compact mirror, little black book of phone numbers",
           "traits": {
-            "emotionalExpression": ["Warm"],
-            "socialEnergy": ["Friendly"],
-            "thinkingStyle": ["Observant", "Practical"],
-            "humorPersonality": ["Witty"],
-            "coreValues": ["Courageous", "Authentic"],
-            "howTheyCare": ["Kind"],
-            "energyPresence": ["Energetic"],
-            "lifestyleInterests": ["Social"]
+            "emotionalExpression": [
+              "Warm"
+            ],
+            "socialEnergy": [
+              "Friendly"
+            ],
+            "thinkingStyle": [
+              "Observant",
+              "Practical"
+            ],
+            "humorPersonality": [
+              "Witty"
+            ],
+            "coreValues": [
+              "Courageous",
+              "Authentic"
+            ],
+            "howTheyCare": [
+              "Kind"
+            ],
+            "energyPresence": [
+              "Energetic"
+            ],
+            "lifestyleInterests": [
+              "Social"
+            ]
           }
         },
         {
@@ -78,13 +110,28 @@
           "backstory": "Came to L.A. from Sicily as a boy, built his empire from the docks up. Controls most of the smuggling through the port and has legitimate businesses as fronts. Not a thug — he's a businessman who happens to deal in illegal goods. Has a complicated history with Marlowe: respects the detective's code but won't hesitate to act if crossed. His daughter is studying at USC and doesn't know the full extent of the family business.",
           "inventory": "Gold pocket watch, Cuban cigars, pearl-handled derringer (ankle holster)",
           "traits": {
-            "emotionalExpression": ["Reserved"],
-            "socialEnergy": ["Takes Initiative"],
-            "thinkingStyle": ["Practical", "Wise"],
-            "humorPersonality": ["Dry"],
-            "coreValues": ["Loyal"],
-            "howTheyCare": ["Protective"],
-            "energyPresence": ["Steady"],
+            "emotionalExpression": [
+              "Reserved"
+            ],
+            "socialEnergy": [
+              "Takes Initiative"
+            ],
+            "thinkingStyle": [
+              "Practical",
+              "Wise"
+            ],
+            "humorPersonality": [
+              "Dry"
+            ],
+            "coreValues": [
+              "Loyal"
+            ],
+            "howTheyCare": [
+              "Protective"
+            ],
+            "energyPresence": [
+              "Steady"
+            ],
             "lifestyleInterests": []
           }
         }
@@ -120,7 +167,6 @@
       "selectedModel": null,
       "webSearch": false,
       "chatSearch": false,
-      "memory": true,
       "temperature": 0.85,
       "topP": 0.9,
       "maxTokens": 2048

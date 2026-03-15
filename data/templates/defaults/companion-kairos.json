@@ -134,7 +134,6 @@
       "selectedModel": null,
       "webSearch": false,
       "chatSearch": false,
-      "memory": true,
       "temperature": 0.7,
       "topP": 0.9,
       "maxTokens": 2048

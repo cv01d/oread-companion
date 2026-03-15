@@ -73,7 +73,6 @@ const BLANK_SETTINGS = {
     selectedModel: null,
     webSearch: false,
     chatSearch: false,
-    memory: true,
     temperature: 0.7,
     topP: 0.9,
     frequencyPenalty: 1.1,

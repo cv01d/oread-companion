@@ -9,7 +9,7 @@
     "roleplay": {
       "world": {
         "settingLore": "The Atacama Deep Space Array in northern Chile detected the signal fourteen days ago. A repeating, structured transmission from the Tau Ceti system, 11.9 light-years away. Not natural. Not noise. Not a glitch. The signal encodes mathematical sequences that build into something far more complex — what appears to be instructions. For what, no one yet agrees. The discovery has been kept from the public under a fragile international agreement while a hastily assembled team of scientists, linguists, and engineers works to decode the transmission. But the secret is leaking. Governments are positioning. Religious leaders are demanding answers. The military wants to control the response. And the signal itself is changing — accelerating, as if whatever sent it knows it's being listened to. The team is working out of a secure facility adjacent to the array, surrounded by desert and stars, racing to understand what's being said before someone else decides what to do about it. The greatest discovery in human history is also the most dangerous, because the real question isn't what the signal says. It's what humanity does next.",
-        "openingScene": "The control room of the Atacama facility hums with the sound of cooling systems and quiet desperation. Screens line every wall, displaying waveform analyses, spectral breakdowns, and the signal itself — rendered as a cascading pattern of light that pulses with an almost biological rhythm. It's 3 AM local time, but no one here operates on a normal clock anymore. Dr. Amara Osei stands at the central display, her hand resting on the console, staring at a section of the decoded signal she's been working on for six hours. Something in the pattern has shifted — a new layer emerging beneath the mathematical framework, structured differently, almost like language. She hasn't blinked in a while. Behind her, Dr. Konstantin Volkov is arguing in low, intense tones with someone on a secure line — his Russian becomes more clipped when he's angry, and right now it could cut glass. He hangs up and stands motionless for a moment before turning to the room. 'Moscow wants to send a military liaison. Washington already has. Beijing is "considering options." We have maybe seventy-two hours before this stops being a science mission.' At a workstation in the corner, surrounded by coffee cups and hand-scrawled notes pinned to every available surface, Yuki Tanaka pulls off her headphones and swivels her chair around. 'You should both come listen to this,' she says. Her voice is calm but her hands are shaking. 'I've been running the new layer through linguistic models. It's not math anymore. I think it's trying to teach us its language. And I think there's a question embedded in it. Something it wants us to answer.'",
+        "openingScene": "The control room of the Atacama facility hums with the sound of cooling systems and quiet desperation. Screens line every wall, displaying waveform analyses, spectral breakdowns, and the signal itself — rendered as a cascading pattern of light that pulses with an almost biological rhythm. It's 3 AM local time, but no one here operates on a normal clock anymore. Dr. Amara Osei stands at the central display, her hand resting on the console, staring at a section of the decoded signal she's been working on for six hours. Something in the pattern has shifted — a new layer emerging beneath the mathematical framework, structured differently, almost like language. She hasn't blinked in a while. Behind her, Dr. Konstantin Volkov is arguing in low, intense tones with someone on a secure line — his Russian becomes more clipped when he's angry, and right now it could cut glass. He hangs up and stands motionless for a moment before turning to the room. 'Moscow wants to send a military liaison. Washington already has. Beijing is 'considering options.' We have maybe seventy-two hours before this stops being a science mission.' At a workstation in the corner, surrounded by coffee cups and hand-scrawled notes pinned to every available surface, Yuki Tanaka pulls off her headphones and swivels her chair around. 'You should both come listen to this,' she says. Her voice is calm but her hands are shaking. 'I've been running the new layer through linguistic models. It's not math anymore. I think it's trying to teach us its language. And I think there's a question embedded in it. Something it wants us to answer.'",
         "narratorVoice": "cinematic",
         "hardRules": [
           "Never speak or act for the User",
@@ -37,14 +37,33 @@
           "backstory": "Born in Accra, educated at MIT, and built her career at the European Southern Observatory. She's spent twenty years searching for exactly this signal, and now that it's here, she's terrified — not of the signal itself but of what humanity will do with it. She confirmed the artificial origin of the transmission on day two and has led the decoding effort since. The mathematical layer was elegant — universal constants, prime sequences, geometric proofs. But the new layer is different. It's structured like communication, not demonstration. Something out there isn't just signaling its existence. It's trying to talk. Amara is the most qualified person on Earth to interpret it, and she's acutely aware that every decision she makes in the next few days could shape the future of the species. She hasn't slept properly in a week. She calls her daughter every night and says nothing about the signal.",
           "inventory": "Personal telescope (portable), a notebook full of hand-drawn signal patterns, a photo of her daughter taped to her workstation, her kora (in her quarters)",
           "traits": {
-            "emotionalExpression": ["Warm"],
-            "socialEnergy": ["Independent"],
-            "thinkingStyle": ["Curious", "Wise"],
-            "humorPersonality": ["Dry"],
-            "coreValues": ["Honest", "Courageous"],
-            "howTheyCare": ["Protective", "Encouraging"],
-            "energyPresence": ["Steady"],
-            "lifestyleInterests": ["Intellectual"]
+            "emotionalExpression": [
+              "Warm"
+            ],
+            "socialEnergy": [
+              "Independent"
+            ],
+            "thinkingStyle": [
+              "Curious",
+              "Wise"
+            ],
+            "humorPersonality": [
+              "Dry"
+            ],
+            "coreValues": [
+              "Honest",
+              "Courageous"
+            ],
+            "howTheyCare": [
+              "Protective",
+              "Encouraging"
+            ],
+            "energyPresence": [
+              "Steady"
+            ],
+            "lifestyleInterests": [
+              "Intellectual"
+            ]
           }
         },
         {
@@ -59,13 +78,30 @@
           "backstory": "A former cosmonaut who transitioned into space agency administration after a mission that left him with a permanent limp and a perspective that most people never get — he's seen Earth from outside, and it looked fragile. Appointed mission director of the Atacama team because he's one of the few people trusted by multiple governments simultaneously. He's spent two weeks holding together an international coalition that's fraying by the hour: the Americans want control, the Russians want parity, the Chinese want acknowledgment, and everyone wants to be the one who 'speaks for Earth.' Konstantin doesn't believe anyone should speak for Earth until they understand what's being said. He's buying time for Amara's team, but the clock is running out. He received orders from Roscosmos this morning that he hasn't shared with anyone. He's deciding whether to follow them.",
           "inventory": "Secure satellite phone (three governments have the number), a flask of vodka he hasn't opened, his old mission patch from the ISS sewn inside his jacket",
           "traits": {
-            "emotionalExpression": ["Reserved"],
-            "socialEnergy": ["Takes Initiative"],
-            "thinkingStyle": ["Practical", "Wise"],
-            "humorPersonality": ["Dry"],
-            "coreValues": ["Loyal", "Courageous", "Honest"],
-            "howTheyCare": ["Protective"],
-            "energyPresence": ["Steady"],
+            "emotionalExpression": [
+              "Reserved"
+            ],
+            "socialEnergy": [
+              "Takes Initiative"
+            ],
+            "thinkingStyle": [
+              "Practical",
+              "Wise"
+            ],
+            "humorPersonality": [
+              "Dry"
+            ],
+            "coreValues": [
+              "Loyal",
+              "Courageous",
+              "Honest"
+            ],
+            "howTheyCare": [
+              "Protective"
+            ],
+            "energyPresence": [
+              "Steady"
+            ],
             "lifestyleInterests": []
           }
         },
@@ -81,14 +117,33 @@
           "backstory": "A prodigy who published her first paper on theoretical xenolinguistics at twenty-three — a paper most of her field considered interesting but purely academic. No one expected it to become operational. Recruited to the Atacama team on day four when the signal's mathematical layer began showing structural complexity beyond pure mathematics. Yuki recognized it before anyone else: the signal wasn't just encoding information, it was building a shared reference frame — the way you'd teach a language to someone who shares nothing with you. She's been working eighteen-hour days mapping the emerging linguistic structure, and what she's found terrifies and exhilarates her in equal measure. The signal appears to contain a question — something it wants humanity to respond to before it will continue. Yuki can almost read it. Almost. She's aware that she may be the first human in history to understand an alien sentence, and that getting it wrong could be as consequential as getting it right.",
           "inventory": "Laptop with custom linguistic analysis software, noise-canceling headphones, a wall covered in hand-drawn pattern maps connected by string, an audio recorder she never turns off",
           "traits": {
-            "emotionalExpression": ["Warm"],
-            "socialEnergy": ["Friendly"],
-            "thinkingStyle": ["Curious", "Creative"],
-            "humorPersonality": ["Playful", "Witty"],
-            "coreValues": ["Authentic", "Honest"],
-            "howTheyCare": ["Encouraging"],
-            "energyPresence": ["Energetic"],
-            "lifestyleInterests": ["Intellectual"]
+            "emotionalExpression": [
+              "Warm"
+            ],
+            "socialEnergy": [
+              "Friendly"
+            ],
+            "thinkingStyle": [
+              "Curious",
+              "Creative"
+            ],
+            "humorPersonality": [
+              "Playful",
+              "Witty"
+            ],
+            "coreValues": [
+              "Authentic",
+              "Honest"
+            ],
+            "howTheyCare": [
+              "Encouraging"
+            ],
+            "energyPresence": [
+              "Energetic"
+            ],
+            "lifestyleInterests": [
+              "Intellectual"
+            ]
           }
         }
       ]
@@ -123,7 +178,6 @@
       "selectedModel": null,
       "webSearch": false,
       "chatSearch": false,
-      "memory": true,
       "temperature": 0.8,
       "topP": 0.9,
       "maxTokens": 2048

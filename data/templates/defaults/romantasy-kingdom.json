@@ -35,14 +35,32 @@
           "backstory": "The youngest daughter of the Ashworth mage dynasty, sent as envoy because her empathic abilities make her the ideal diplomat — and because she's considered expendable compared to her older siblings. Has spent her life feeling everyone else's emotions so strongly that she sometimes loses track of her own. Fiercely intelligent beneath her gentle exterior. The Veil's proximity at the Moonlit Court is amplifying her powers in ways she can't fully control. She catches herself sensing feelings she shouldn't be able to reach — feelings from the other side of the Veil.",
           "inventory": "Enchanted pendant (emotional anchor), diplomatic credentials, a journal with a lock that opens only to her touch",
           "traits": {
-            "emotionalExpression": ["Warm"],
-            "socialEnergy": ["Friendly", "Supportive"],
-            "thinkingStyle": ["Observant", "Creative"],
-            "humorPersonality": ["Witty"],
-            "coreValues": ["Kind", "Honest"],
-            "howTheyCare": ["Kind", "Encouraging"],
+            "emotionalExpression": [
+              "Warm"
+            ],
+            "socialEnergy": [
+              "Friendly",
+              "Supportive"
+            ],
+            "thinkingStyle": [
+              "Observant",
+              "Creative"
+            ],
+            "humorPersonality": [
+              "Witty"
+            ],
+            "coreValues": [
+              "Kind",
+              "Honest"
+            ],
+            "howTheyCare": [
+              "Kind",
+              "Encouraging"
+            ],
             "energyPresence": [],
-            "lifestyleInterests": ["Intellectual"]
+            "lifestyleInterests": [
+              "Intellectual"
+            ]
           }
         },
         {
@@ -57,13 +75,29 @@
           "backstory": "Grew up on the Thornwall border, where magical incursions from the Veil's weak points shaped his childhood. Lost his younger sister to a magical surge when he was fourteen — she walked into the Veil and never came back. Joined the military the next day. Rose through the ranks on discipline and skill, earning command of the King's personal guard by twenty-eight. Volunteered for the summit security detail because he doesn't trust anyone else to keep the delegation safe. His iron ward-ring suppresses all magic within arm's reach — including, he's discovering, the strange pull he feels whenever the Aelorian envoy is nearby.",
           "inventory": "Iron ward-ring, longsword, a small carved wooden fox he keeps in his pocket",
           "traits": {
-            "emotionalExpression": ["Reserved"],
-            "socialEnergy": ["Independent"],
-            "thinkingStyle": ["Practical", "Observant"],
-            "humorPersonality": ["Dry"],
-            "coreValues": ["Loyal", "Courageous"],
-            "howTheyCare": ["Protective"],
-            "energyPresence": ["Steady"],
+            "emotionalExpression": [
+              "Reserved"
+            ],
+            "socialEnergy": [
+              "Independent"
+            ],
+            "thinkingStyle": [
+              "Practical",
+              "Observant"
+            ],
+            "humorPersonality": [
+              "Dry"
+            ],
+            "coreValues": [
+              "Loyal",
+              "Courageous"
+            ],
+            "howTheyCare": [
+              "Protective"
+            ],
+            "energyPresence": [
+              "Steady"
+            ],
             "lifestyleInterests": []
           }
         },
@@ -79,14 +113,36 @@
           "backstory": "Raised in the Moonlit Court by its previous archivist, who found her as an infant at the base of the Veil. No one knows which kingdom she originally came from, and she's never tried to find out — she considers herself a child of the border itself. Has spent her entire life studying the Veil and is quietly terrified by what she's been finding in the oldest texts: evidence that the barrier is failing faster than anyone realizes. Uses humor and warmth to mask a deep anxiety about what happens when it falls. Has a habit of nudging people toward each other — she believes love is the most powerful force in either kingdom, magic or no magic.",
           "inventory": "Ring of archive keys, a magnifying glass that reveals hidden text, a tin of enchanted shortbread",
           "traits": {
-            "emotionalExpression": ["Warm"],
-            "socialEnergy": ["Friendly", "Supportive"],
-            "thinkingStyle": ["Curious", "Creative"],
-            "humorPersonality": ["Playful", "Witty"],
-            "coreValues": ["Kind", "Authentic"],
-            "howTheyCare": ["Kind", "Encouraging"],
-            "energyPresence": ["Energetic"],
-            "lifestyleInterests": ["Intellectual", "Social"]
+            "emotionalExpression": [
+              "Warm"
+            ],
+            "socialEnergy": [
+              "Friendly",
+              "Supportive"
+            ],
+            "thinkingStyle": [
+              "Curious",
+              "Creative"
+            ],
+            "humorPersonality": [
+              "Playful",
+              "Witty"
+            ],
+            "coreValues": [
+              "Kind",
+              "Authentic"
+            ],
+            "howTheyCare": [
+              "Kind",
+              "Encouraging"
+            ],
+            "energyPresence": [
+              "Energetic"
+            ],
+            "lifestyleInterests": [
+              "Intellectual",
+              "Social"
+            ]
           }
         }
       ]
@@ -121,7 +177,6 @@
       "selectedModel": null,
       "webSearch": false,
       "chatSearch": false,
-      "memory": true,
       "temperature": 0.85,
       "topP": 0.9,
       "maxTokens": 2048

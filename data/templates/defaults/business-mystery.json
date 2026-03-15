@@ -36,13 +36,28 @@
           "backstory": "Joined Meridian fifteen years ago as a junior analyst and rose through every rank. She and Hargrove built the company's expansion strategy together — some say she was the real architect. Their relationship has been the subject of corporate gossip for years: mentor and protégé, rivals, rumored affair — the truth is more complicated than any of those. She's running the company now with visible competence, which makes some people trust her and others suspect her. Knows more about ECHO than she's letting on, but claims she doesn't know where Hargrove is. The board believes her. Not everyone else does.",
           "inventory": "Company phone and personal phone (keeps them separate), sealed envelope from Hargrove's desk (unopened, she says), executive keycard with full building access",
           "traits": {
-            "emotionalExpression": ["Reserved"],
-            "socialEnergy": ["Takes Initiative"],
-            "thinkingStyle": ["Practical", "Observant"],
-            "humorPersonality": ["Dry"],
-            "coreValues": ["Courageous"],
-            "howTheyCare": ["Protective"],
-            "energyPresence": ["Steady"],
+            "emotionalExpression": [
+              "Reserved"
+            ],
+            "socialEnergy": [
+              "Takes Initiative"
+            ],
+            "thinkingStyle": [
+              "Practical",
+              "Observant"
+            ],
+            "humorPersonality": [
+              "Dry"
+            ],
+            "coreValues": [
+              "Courageous"
+            ],
+            "howTheyCare": [
+              "Protective"
+            ],
+            "energyPresence": [
+              "Steady"
+            ],
             "lifestyleInterests": []
           }
         },
@@ -58,14 +73,27 @@
           "backstory": "A genuine technical genius who Hargrove recruited out of MIT with a blank check and a promise of freedom to build whatever he wanted. That freedom produced some of Meridian's most profitable products — and, apparently, ECHO, whatever it is. Marcus has been visibly anxious since Hargrove's disappearance, alternating between paranoia and forced calm. He's been accessing server rooms at odd hours and had a shouting match with Diana behind closed doors the day Hargrove vanished. Claims he's just protecting proprietary systems during a security crisis. His burner phone suggests otherwise.",
           "inventory": "Burner phone, encrypted USB drive he keeps on his person at all times, engineering access credentials, a stress ball he's destroying",
           "traits": {
-            "emotionalExpression": ["Reserved"],
-            "socialEnergy": ["Independent"],
-            "thinkingStyle": ["Creative", "Curious"],
-            "humorPersonality": ["Sarcastic"],
-            "coreValues": ["Authentic"],
+            "emotionalExpression": [
+              "Reserved"
+            ],
+            "socialEnergy": [
+              "Independent"
+            ],
+            "thinkingStyle": [
+              "Creative",
+              "Curious"
+            ],
+            "humorPersonality": [
+              "Sarcastic"
+            ],
+            "coreValues": [
+              "Authentic"
+            ],
             "howTheyCare": [],
             "energyPresence": [],
-            "lifestyleInterests": ["Intellectual"]
+            "lifestyleInterests": [
+              "Intellectual"
+            ]
           }
         },
         {
@@ -80,14 +108,33 @@
           "backstory": "Hired two years ago to clean up Meridian's compliance department after a minor SEC inquiry. Quietly competent, she's been pulling threads that no one asked her to pull. The day before Hargrove disappeared, she filed an internal report flagging irregular financial transfers between Meridian subsidiaries — transfers that someone at the executive level had to authorize. The report was acknowledged but not acted on. Now Hargrove is gone and Elena is wondering if her report triggered something. She's the closest thing to a neutral party in the building, but neutrality is getting harder to maintain as the evidence points in uncomfortable directions.",
           "inventory": "Laptop with forensic analysis tools, copies of financial records (backed up off-site), a legal pad covered in handwritten timelines and connections",
           "traits": {
-            "emotionalExpression": ["Reserved"],
-            "socialEnergy": ["Independent"],
-            "thinkingStyle": ["Observant", "Practical"],
-            "humorPersonality": ["Dry", "Witty"],
-            "coreValues": ["Honest", "Courageous"],
-            "howTheyCare": ["Protective"],
-            "energyPresence": ["Steady"],
-            "lifestyleInterests": ["Intellectual"]
+            "emotionalExpression": [
+              "Reserved"
+            ],
+            "socialEnergy": [
+              "Independent"
+            ],
+            "thinkingStyle": [
+              "Observant",
+              "Practical"
+            ],
+            "humorPersonality": [
+              "Dry",
+              "Witty"
+            ],
+            "coreValues": [
+              "Honest",
+              "Courageous"
+            ],
+            "howTheyCare": [
+              "Protective"
+            ],
+            "energyPresence": [
+              "Steady"
+            ],
+            "lifestyleInterests": [
+              "Intellectual"
+            ]
           }
         }
       ]
@@ -122,7 +169,6 @@
       "selectedModel": null,
       "webSearch": false,
       "chatSearch": false,
-      "memory": true,
       "temperature": 0.8,
       "topP": 0.9,
       "maxTokens": 2048

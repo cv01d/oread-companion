@@ -24,9 +24,6 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@langchain/community": "^1.1.23",
-    "@langchain/core": "^1.1.32",
-    "@langchain/ollama": "^1.2.6",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -36,7 +33,6 @@
     "express-session": "^1.19.0",
     "helmet": "^8.1.0",
     "joi": "^18.0.2",
-    "langchain": "^1.2.31",
     "ollama": "^0.6.3",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.0.2",

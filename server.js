@@ -9,16 +9,10 @@ import { CONFIG, validateConfig } from './config/index.js';
 // Services
 import ollamaService from './services/ollama.js';
 import database from './services/database.js';
-import embeddingService from './services/embeddingService.js';
-import extractionAgent from './services/extractionAgent.js';
-import memoryManager from './services/memoryManager.js';
-import conversationMemory from './services/conversationMemory.js';
-import entityMemory from './services/entityMemory.js';
 import { initializeCharacters } from './controllers/characterController.js';
 
 // Routes
 import sessionsRouter from './routes/sessions.js';
-import memoryRouter from './routes/memory.js';
 import charactersRouter from './routes/characters.js';
 import templatesRouter from './routes/templates.js';
 
@@ -112,7 +106,6 @@ app.get('/api/csrf-token', (req, res) => {
 });
 
 app.use('/api/sessions', sessionsRouter);
-app.use('/api/memory', memoryRouter);
 app.use('/api/characters', charactersRouter);
 app.use('/api/templates', templatesRouter);
 
@@ -181,61 +174,19 @@ app.post('/api/models/pull', validate(modelPullSchema), asyncHandler(async (req,
 
 // ===== CHAT ENDPOINT =====
 
-// Chat endpoint with streaming response and unified memory system
+// Chat endpoint with streaming response
 app.post('/api/chat', validate(chatSchema), asyncHandler(async (req, res) => {
-  const { model, messages, systemPrompt, temperature, topP, frequencyPenalty, maxTokens, sessionId, settings } = req.body;
+  const { model, messages, systemPrompt, temperature, topP, frequencyPenalty, maxTokens, sessionId } = req.body;
 
   // Set up SSE headers
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
 
-  let messagesToSend = messages;
-  let augmentedSystemPrompt = systemPrompt || '';
-  let memoryUsed = false;
-
   try {
-    const memoryEnabled = settings?.general?.memory;
-    const userMessage = messages[messages.length - 1]?.content || '';
-
-    // ── Unified Memory System ──────────────────────────────────
-    if (sessionId && memoryEnabled) {
-      try {
-        // 1. Initialize session memory (indexes lorebook + loads entities)
-        const characters = resolveCharacters(settings);
-        await memoryManager.initializeSession(sessionId, characters);
-
-        // 2. Retrieve relevant context from unified FAISS index (token-budgeted)
-        const { chunks, totalTokens } = await memoryManager.retrieve(sessionId, userMessage, 1300);
-
-        if (chunks.length > 0) {
-          const contextBlock = memoryManager.formatRetrievedContext(chunks);
-          augmentedSystemPrompt += `\n\n${contextBlock}`;
-          memoryUsed = true;
-
-          const typeCounts = {};
-          for (const c of chunks) {
-            typeCounts[c.type] = (typeCounts[c.type] || 0) + 1;
-          }
-          console.log(`🧠 Memory: ${chunks.length} chunks (${totalTokens} tokens) — ${JSON.stringify(typeCounts)}`);
-        }
-
-        // 3. Use conversation summary buffer instead of crude message windowing
-        const { summary, recentMessages } = await conversationMemory.getConversationContext(sessionId);
-        messagesToSend = conversationMemory.buildMessagesForLLM(summary, recentMessages);
-
-        if (summary) {
-          console.log(`📝 Using conversation summary (${recentMessages.length} recent messages)`);
-        }
-      } catch (memError) {
-        console.error('Memory system error (falling back to full messages):', memError);
-        // Fall back to raw messages on memory failure
-      }
-    }
-
     // Build options object
     const options = {
-      systemPrompt: augmentedSystemPrompt || undefined,
+      systemPrompt: systemPrompt || undefined,
       temperature: temperature !== undefined ? temperature : undefined,
       topP: topP !== undefined ? topP : undefined,
       frequencyPenalty: frequencyPenalty !== undefined ? frequencyPenalty : undefined,
@@ -246,18 +197,17 @@ app.post('/api/chat', validate(chatSchema), asyncHandler(async (req, res) => {
     if (CONFIG.isDevelopment) {
       console.log('💬 Chat Request:');
       console.log('Model:', model);
-      console.log('Messages:', messagesToSend.length, memoryUsed ? '(Memory)' : '(Full)');
+      console.log('Messages:', messages.length);
       console.log('Temperature:', temperature, 'Top P:', topP);
     }
 
     // Save user message before streaming so it's persisted regardless of what follows
-    let userMsgId = null;
     if (sessionId) {
       const userMsg = messages[messages.length - 1];
-      userMsgId = await saveMessageToSession(sessionId, userMsg);
+      await saveMessageToSession(sessionId, userMsg);
     }
 
-    const stream = await ollamaService.chat(model, messagesToSend, options);
+    const stream = await ollamaService.chat(model, messages, options);
 
     let assistantResponse = '';
 
@@ -270,93 +220,23 @@ app.post('/api/chat', validate(chatSchema), asyncHandler(async (req, res) => {
 
     // Save assistant message before ending the response so the DB is consistent
     // before the client considers the turn complete
-    let assistantMsgId = null;
     if (sessionId) {
       const assistantMsg = {
         role: 'assistant',
         content: assistantResponse,
         timestamp: new Date().toISOString()
       };
-      assistantMsgId = await saveMessageToSession(sessionId, assistantMsg);
+      await saveMessageToSession(sessionId, assistantMsg);
       console.log('✅ Messages saved to session');
     }
 
     res.end();
-
-    // ── Background Tasks (serialized to avoid hogging Ollama) ──
-    // Ollama processes requests sequentially on the GPU. Running embed +
-    // multiple LLM calls in parallel queues them all up and blocks the
-    // next chat request. Instead, run them in sequence: fast embed first,
-    // then one LLM task at a time.
-    if (sessionId && memoryEnabled) {
-      const userMsg = messages[messages.length - 1];
-      const assistantMsg = { role: 'assistant', content: assistantResponse };
-
-      (async () => {
-        try {
-          // 1. Embed (fast, uses embed model — doesn't block chat model)
-          await memoryManager.addMessages(sessionId, [
-            { ...userMsg, id: userMsgId },
-            { ...assistantMsg, id: assistantMsgId }
-          ]);
-        } catch (err) { console.error('Memory indexing error:', err); }
-
-        try {
-          // 2. Summary update (uses chat model — run alone)
-          await conversationMemory.updateSummary(sessionId, model);
-        } catch (err) { console.error('Summary update error:', err); }
-
-        try {
-          // 3. Entity extraction (uses chat model — run alone)
-          await entityMemory.extractAndStore(sessionId, userMessage, assistantResponse, model);
-        } catch (err) { console.error('Entity extraction error:', err); }
-
-        // 4. Roleplay extraction (uses chat model — run last, least urgent)
-        if (settings?.mode === 'roleplay') {
-          try {
-            const shouldAnalyze = await extractionAgent.shouldRunAnalysis(sessionId);
-            if (shouldAnalyze) {
-              console.log('🔍 Running extraction analysis...');
-              const result = await extractionAgent.analyzeConversation(sessionId, settings);
-              if (result.proposed_updates.length > 0) {
-                console.log(`💡 Found ${result.proposed_updates.length} suggested updates`);
-                await saveExtractionResults(sessionId, result.proposed_updates);
-              }
-            }
-          } catch (err) { console.error('Extraction error:', err); }
-        }
-      })();
-    }
   } catch (error) {
     const errorMsg = CONFIG.isDevelopment ? error.message : 'Chat request failed';
     res.write(`data: ${JSON.stringify({ error: errorMsg })}\n\n`);
     res.end();
   }
 }));
-
-/**
- * Resolve character data from settings for memory initialization.
- */
-function resolveCharacters(settings) {
-  if (!settings?.roleplay) return [];
-
-  const { characterMode, character, characters, _loadedCharacters } = settings.roleplay;
-
-  // Prefer _loadedCharacters (already resolved by the client)
-  if (_loadedCharacters && _loadedCharacters.length > 0) {
-    return _loadedCharacters;
-  }
-
-  if (characterMode === 'multi' && characters && characters.length > 0) {
-    return characters;
-  }
-
-  if (character) {
-    return [character];
-  }
-
-  return [];
-}
 
 // ===== HELPER FUNCTIONS =====
 
@@ -383,23 +263,6 @@ async function saveMessageToSession(sessionId, message) {
   });
 
   return messageId;
-}
-
-async function saveExtractionResults(sessionId, proposedUpdates) {
-  try {
-    await database.run(
-      `UPDATE messages
-       SET extracted_data = ?,
-           extraction_status = 'pending'
-       WHERE session_id = ?
-       ORDER BY timestamp DESC
-       LIMIT 1`,
-      [JSON.stringify(proposedUpdates), sessionId]
-    );
-  } catch (error) {
-    console.error('Save extraction results error:', error);
-    throw error;
-  }
 }
 
 // ===== ERROR HANDLING =====
@@ -468,7 +331,6 @@ async function startServer() {
       console.log(`   - POST /api/chat`);
    
       console.log(`   - /api/sessions/*`);
-      console.log(`   - /api/memory/*`);
       console.log(`   - /api/characters/*`);
     });
   } catch (error) {
