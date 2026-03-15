@@ -119,7 +119,7 @@ body {
   width: 100%;
   display: flex;
   flex-direction: column;
-  background-color: $color-bg-white;
+  background-color: #161616;
   overflow: auto;
   margin: 0;
   padding: 0;
@@ -1377,6 +1377,7 @@ body {
 
   &__url-section {
     display: flex;
+    flex-direction: column;
     gap: $spacing-sm;
     margin-top: $spacing-md;
   }

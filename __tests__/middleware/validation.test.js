@@ -298,8 +298,8 @@ describe('validateImageUpload', () => {
     expect(() => validateImageUpload(`data:image/png;base64,${fakeData}`)).toThrow(/signature/i);
   });
 
-  it('rejects an image over 2 MB', () => {
-    const bigBuffer = Buffer.alloc(3 * 1024 * 1024);
+  it('rejects an image over 15 MB', () => {
+    const bigBuffer = Buffer.alloc(16 * 1024 * 1024);
     // Put valid PNG magic bytes so it passes that check first
     bigBuffer[0] = 0x89; bigBuffer[1] = 0x50; bigBuffer[2] = 0x4e; bigBuffer[3] = 0x47;
     expect(() =>

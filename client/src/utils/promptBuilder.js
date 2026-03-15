@@ -99,7 +99,8 @@ function buildRoleplayPrompt(settings, isFirstMessage) {
   if (narrativeStyle) {
     prompt += `Style: ${narrativeStyle.frame}. ${narrativeStyle.format}. ${narrativeStyle.constraint}.\n`;
   }
-  prompt += `Formatting: Use parenthetical emotes for physical actions, e.g. (leans back). Keep tone grounded and authentic.\n Only use the character's name in narration when necessary for clarity. Never use the character's name in dialogue unless it fits naturally.\n`;
+  prompt += `Formatting: Use parenthetical emotes for physical actions, e.g. (leans back). Keep tone grounded and authentic.\n Never use the character's full name.\n Do not break the fourth wall or reference the user as "the user" in narration. Instead, use second-person "you" to maintain immersion.\n
+  Do not lead with your name in the dialogue. Start with the content of the message, and only include the name if it fits naturally.\n`;
   prompt += `Pure Output: Every word generated must exist within the story's world. Your responses consist entirely of the unfolding scene and ${firstName}'s contributions to it.\n`;
 
 
@@ -145,8 +146,8 @@ function buildRoleplayPrompt(settings, isFirstMessage) {
     Do not show this reasoning in your response. Use it to shape HOW you respond.\n\n`;
   } else {
     prompt += `TURN PACING:\n`;
-    prompt += `- Each reply should react to ${userName}'s latest input and add one in-scene beat from ${firstName}'s perspective.\n`;
-    prompt += `- Stop at a natural handoff point where ${userName} can speak or act next. Do not narrate what happens after the handoff.\n`;
+    prompt += `- Each reply should react to ${userName}'s latest input and add one in-scene beat from ${firstName}'s perspective.\n Include supporting characters in narration when it serves the scene, but do not let them overshadow ${firstName}'s voice`;
+    prompt += `- Stop at a natural handoff point where ${userName} can speak or act next. Do not narrate what happens after the handoff,but offer an invitation for the user to continue.\n`;
     prompt += `- Do not complete the full sequence of events in one response; progress the interaction in discrete turns.\n`;
     prompt += `- Treat every turn as a live exchange: react, develop, then hand back.\n\n`;
   }

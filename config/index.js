@@ -60,7 +60,7 @@ export const CONFIG = {
     : ['http://localhost:5173', 'http://localhost:3000'],
 
   // Upload Limits
-  MAX_UPLOAD_SIZE: process.env.MAX_UPLOAD_SIZE || '2mb',
+  MAX_UPLOAD_SIZE: process.env.MAX_UPLOAD_SIZE || '20mb',
 
   // Rate Limiting
   RATE_LIMIT: {

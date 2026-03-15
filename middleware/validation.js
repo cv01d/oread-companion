@@ -215,8 +215,8 @@ export function validateImageUpload(base64Data) {
 
   // Decode and check size
   const buffer = Buffer.from(data, 'base64');
-  if (buffer.length > 2 * 1024 * 1024) { // 2MB
-    throw new Error('Image too large. Maximum size: 2MB');
+  if (buffer.length > 15 * 1024 * 1024) { // 15MB
+    throw new Error('Image too large. Maximum size: 15MB');
   }
 
   // Validate magic bytes (file signature)

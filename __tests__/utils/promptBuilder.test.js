@@ -275,8 +275,8 @@ describe('buildSystemPrompt – multi-character switching', () => {
   it('includes switch instruction naming the other characters to stop being', () => {
     const settings = multiSettings([makeChar('Kael'), makeChar('Mira'), makeChar('Zara')]);
     const prompt = buildSystemPrompt(settings, 'roleplay');
-    expect(prompt).toContain('patterns from Mira or Zara are superseded');
     expect(prompt).toContain('Kael is the sole active character');
+    expect(prompt).toContain('Mira or Zara are superseded');
   });
 
   it('does not include switch instruction in single-character mode', () => {

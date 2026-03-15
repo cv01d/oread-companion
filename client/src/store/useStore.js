@@ -175,7 +175,7 @@ const useStore = create((set, get) => ({
     // Build system prompt — include opening scene only on first message of session
     const isFirstMessage = state.messages.length === 0;
     const systemPrompt = buildSystemPrompt(settingsWithCharacters, modeForThisMessage, isFirstMessage);
-    console.log('[System Prompt]', systemPrompt);
+    //console.log('[System Prompt]', systemPrompt);
 
     // Determine model (dropdown selection wins, fall back to settings default)
     const modelToUse = selectedModel || state.settings.general.selectedModel;

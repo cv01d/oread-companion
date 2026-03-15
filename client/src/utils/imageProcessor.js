@@ -1,7 +1,7 @@
 // Image processing utilities for avatar uploads
 
 const MAX_SIZE = 512; // Max width/height in pixels
-const MAX_FILE_SIZE_KB = 500; // Max file size in KB
+const MAX_FILE_SIZE_KB = 15360; // Max file size in KB (15MB)
 
 /**
  * Resize image to max dimensions while maintaining aspect ratio

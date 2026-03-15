@@ -94,6 +94,7 @@ export default function CharacterEditor({ inlineCharacter, onCharacterChange, mo
             <ImageUpload
               value={character.avatarImage || ''}
               onChange={(value) => handleFieldChange('avatarImage', value)}
+              onRemove={() => handleFieldChange('avatarImage', '')}
               label="Character Avatar"
             />
           </div>
