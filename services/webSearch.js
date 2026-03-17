@@ -67,53 +67,26 @@ export async function searchWeb(query, apiKey, { maxTokens = 4096, maxUrls = 3, 
 
     const data = await response.json();
 
-    // Debug: log the response structure to understand the shape
-    if (data.grounding) {
-      console.log(`🔍 Grounding keys: ${Object.keys(data.grounding).join(', ')}`);
-      for (const [key, val] of Object.entries(data.grounding)) {
-        if (Array.isArray(val)) {
-          console.log(`🔍   ${key}: ${val.length} items${val.length > 0 ? ', first keys: ' + Object.keys(val[0]).join(', ') : ''}`);
-        } else if (typeof val === 'string') {
-          console.log(`🔍   ${key}: string (${val.length} chars)`);
-        } else {
-          console.log(`🔍   ${key}: ${typeof val}`);
-        }
+    // Structure: grounding.generic[] — each has { url, title, snippets[] }
+    const genericResults = data.grounding?.generic || [];
+    const contextParts = [];
+    const sources = [];
+
+    for (const result of genericResults) {
+      if (result.title) {
+        sources.push({ url: result.url || '', title: result.title });
       }
-    }
 
-    // Extract grounding content — try multiple possible field names
-    let contextParts = [];
-
-    // Try snippets array
-    const snippets = data.grounding?.snippets || [];
-    for (const s of snippets) {
-      const text = s.text || s.content || s.snippet || '';
-      if (text) contextParts.push(text);
-    }
-
-    // Try direct text/context fields
-    if (data.grounding?.text) contextParts.push(data.grounding.text);
-    if (data.grounding?.context) contextParts.push(data.grounding.context);
-
-    // Try web_results or results
-    const webResults = data.grounding?.web_results || data.grounding?.results || [];
-    for (const r of webResults) {
-      const text = r.text || r.content || r.snippet || r.description || '';
-      if (text) contextParts.push(text);
+      // Each result has a snippets array with the actual content
+      const snippets = result.snippets || [];
+      for (const snippet of snippets) {
+        const text = typeof snippet === 'string' ? snippet
+          : snippet.text || snippet.content || snippet.snippet || '';
+        if (text) contextParts.push(text);
+      }
     }
 
     const context = contextParts.filter(Boolean).join('\n\n');
-
-    // Extract source metadata
-    const sources = [];
-    if (data.sources) {
-      for (const [sourceUrl, meta] of Object.entries(data.sources)) {
-        sources.push({
-          url: sourceUrl,
-          title: meta?.title || sourceUrl,
-        });
-      }
-    }
 
     return { context, sources };
   } catch (err) {
