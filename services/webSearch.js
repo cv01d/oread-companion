@@ -5,6 +5,25 @@
 
 const BRAVE_SEARCH_URL = 'https://api.search.brave.com/res/v1/web/search';
 
+// Messages too short or too casual to warrant a web search
+const MIN_SEARCH_LENGTH = 15;
+const CASUAL_PATTERNS = /^(hey|hi|hello|thanks|ok|sure|yes|no|good|great|fine|cool|lol|haha|bye|morning|evening|afternoon|night)\b/i;
+
+/**
+ * Check if a message is worth searching the web for.
+ * Short greetings and casual chat don't need search results.
+ */
+export function shouldSearch(text) {
+  if (!text || text.trim().length < MIN_SEARCH_LENGTH) return false;
+  if (CASUAL_PATTERNS.test(text.trim())) return false;
+  // Questions and factual queries are good candidates
+  if (text.includes('?')) return true;
+  // Explicit search intent
+  if (/\b(who|what|when|where|why|how|latest|current|recent|news|update|search|find|look up)\b/i.test(text)) return true;
+  // Default: search if long enough
+  return text.trim().length >= 30;
+}
+
 /**
  * Search the web using Brave Search API.
  *
@@ -62,5 +81,5 @@ export function formatSearchResults(results) {
     `${i + 1}. ${r.title}\n   ${r.snippet}\n   Source: ${r.url}`
   );
 
-  return `[Web Search Results]\n${lines.join('\n\n')}`;
+  return `[Web Search Results — USE THESE AS YOUR PRIMARY SOURCE. Do not rely on training data when search results are available. Cite sources when relevant.]\n${lines.join('\n\n')}`;
 }

@@ -14,7 +14,7 @@ import { selectMessages } from './services/contextWindow.js';
 import { processPostChat } from './services/postChatProcessor.js';
 import { searchMessages, detectRecallTriggers } from './services/memorySearch.js';
 import { getRelevantGlobalMemories } from './services/globalMemory.js';
-import { searchWeb, formatSearchResults } from './services/webSearch.js';
+import { searchWeb, formatSearchResults, shouldSearch } from './services/webSearch.js';
 
 // Routes
 import sessionsRouter from './routes/sessions.js';
@@ -287,7 +287,7 @@ app.post('/api/chat', validate(chatSchema), asyncHandler(async (req, res) => {
 
         // Web search if enabled
         let webSearchBlock = '';
-        if (settings?.general?.webSearch && settings?.general?.braveApiKey) {
+        if (settings?.general?.webSearch && settings?.general?.braveApiKey && shouldSearch(userContent)) {
           try {
             if (CONFIG.isDevelopment) {
               console.log(`🔍 Web search: "${userContent.substring(0, 80)}"`);
@@ -300,7 +300,7 @@ app.post('/api/chat', validate(chatSchema), asyncHandler(async (req, res) => {
           } catch (err) {
             console.warn('Web search error:', err.message);
           }
-        } else if (CONFIG.isDevelopment && settings?.general?.webSearch) {
+        } else if (CONFIG.isDevelopment && settings?.general?.webSearch && shouldSearch(userContent)) {
           console.log('🔍 Web search enabled but no API key configured');
         }
 
