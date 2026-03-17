@@ -73,11 +73,12 @@ function inferDialecticMode(traits) {
  */
 export function extractStances(assistantResponse, userMessage, currentStances = {}, characterTraits = {}) {
   const charName = Object.keys(currentStances)[0] || 'Character';
-  const stances = currentStances[charName] || {
-    positions: [],
-    dialecticMode: inferDialecticMode(characterTraits),
-    currentEmotionalState: 'neutral',
-    recentConflicts: []
+  const raw = currentStances[charName] || {};
+  const stances = {
+    positions: raw.positions || [],
+    dialecticMode: raw.dialecticMode || inferDialecticMode(characterTraits),
+    currentEmotionalState: raw.currentEmotionalState || 'neutral',
+    recentConflicts: raw.recentConflicts || []
   };
 
   // Detect positions from assistant response
