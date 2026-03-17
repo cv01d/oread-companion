@@ -354,8 +354,6 @@ export default function WorldStatePanel() {
     );
   };
 
-  if (!hasState) return null;
-
   const title = isRoleplay ? 'World State' : 'Session State';
 
   return (
@@ -386,7 +384,7 @@ export default function WorldStatePanel() {
           </button>
         </div>
       </div>
-      {!collapsed && (
+      {!collapsed && hasState && (
         <div className={styles.fields}>
           {isRoleplay ? (
             <>
