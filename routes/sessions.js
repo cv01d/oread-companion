@@ -317,8 +317,9 @@ router.put('/:id/notes', validateUUID('id'), validate(storyNotesSchema), asyncHa
 
 // Get world state for session
 router.get('/:id/world-state', validateUUID('id'), asyncHandler(async (req, res) => {
+  // Use separate queries to handle missing columns gracefully
   const session = await database.get(
-    'SELECT world_state, world_state_history FROM sessions WHERE id = ?',
+    'SELECT world_state FROM sessions WHERE id = ?',
     [req.params.id]
   );
 
@@ -328,8 +329,15 @@ router.get('/:id/world-state', validateUUID('id'), asyncHandler(async (req, res)
 
   let worldState = {};
   try { worldState = JSON.parse(session.world_state || '{}'); } catch (e) { /* */ }
+
   let worldStateHistory = [];
-  try { worldStateHistory = JSON.parse(session.world_state_history || '[]'); } catch (e) { /* */ }
+  try {
+    const historyRow = await database.get(
+      'SELECT world_state_history FROM sessions WHERE id = ?',
+      [req.params.id]
+    );
+    worldStateHistory = JSON.parse(historyRow?.world_state_history || '[]');
+  } catch (e) { /* column may not exist yet */ }
 
   res.json({ success: true, worldState, worldStateHistory });
 }));
