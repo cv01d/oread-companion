@@ -185,13 +185,4 @@ For full architecture details, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) 
 
 ---
 
-## Documentation
-
-- [Architecture](docs/ARCHITECTURE.md) — System design, data flow, project structure, and API reference
-- [Architecture Overhaul](docs/ARCHITECTURE_OVERHAUL.md) — 6-phase plan: store split, summarization, world state, dialectic, FTS5 search, cross-session memory
-- [Quick Start](docs/QUICK_START.md) — Getting up and running fast
-- [Security](docs/SECURITY.md) — Security model and configuration
-
----
-
 MIT License
