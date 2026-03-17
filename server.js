@@ -14,6 +14,7 @@ import { selectMessages } from './services/contextWindow.js';
 import { processPostChat } from './services/postChatProcessor.js';
 import { searchMessages, detectRecallTriggers } from './services/memorySearch.js';
 import { getRelevantGlobalMemories } from './services/globalMemory.js';
+import { searchWeb, formatSearchResults } from './services/webSearch.js';
 
 // Routes
 import sessionsRouter from './routes/sessions.js';
@@ -284,6 +285,17 @@ app.post('/api/chat', validate(chatSchema), asyncHandler(async (req, res) => {
           }
         }
 
+        // Web search if enabled
+        let webSearchBlock = '';
+        if (settings?.general?.webSearch && settings?.general?.braveApiKey) {
+          try {
+            const results = await searchWeb(userContent, settings.general.braveApiKey, { count: 3 });
+            webSearchBlock = formatSearchResults(results);
+          } catch (err) {
+            console.warn('Web search error:', err.message);
+          }
+        }
+
         const { messages: windowedMessages, contextBlock } = selectMessages({
           messages: dbMessages.map(m => ({ role: m.role, content: m.content, pinned: !!m.pinned })),
           systemPrompt: systemPrompt || '',
@@ -300,9 +312,10 @@ app.post('/api/chat', validate(chatSchema), asyncHandler(async (req, res) => {
 
         messagesToSend = windowedMessages;
 
-        // Append context block to system prompt
-        if (contextBlock) {
-          finalSystemPrompt = (systemPrompt || '') + '\n\n' + contextBlock;
+        // Append context block + web search to system prompt
+        const fullContext = [contextBlock, webSearchBlock].filter(Boolean).join('\n\n');
+        if (fullContext) {
+          finalSystemPrompt = (systemPrompt || '') + '\n\n' + fullContext;
           options.systemPrompt = finalSystemPrompt;
         }
 

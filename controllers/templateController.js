@@ -80,7 +80,8 @@ const BLANK_SETTINGS = {
     maxTokens: 2048,
     contextBudget: 4096,
     autoSummarize: true,
-    crossSessionMemory: true
+    crossSessionMemory: true,
+    braveApiKey: ''
   },
   meta: {
     templateId: null,

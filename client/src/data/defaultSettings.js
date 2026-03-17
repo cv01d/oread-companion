@@ -48,6 +48,7 @@ export const DEFAULT_SETTINGS = {
   general: {
     selectedModel: null,
     webSearch: false,
+    braveApiKey: '',
     chatSearch: false,
     temperature: 0.8,
     topP: 0.9,

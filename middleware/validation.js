@@ -205,6 +205,7 @@ export const settingsSchema = Joi.object({
     general: Joi.object({
       selectedModel: Joi.string().max(100).allow(null).optional(),
       webSearch: Joi.boolean().optional(),
+      braveApiKey: Joi.string().max(200).allow('', null).optional(),
       chatSearch: Joi.boolean().optional(),
       temperature: Joi.number().min(0).max(2).optional(),
       topP: Joi.number().min(0).max(1).optional(),
