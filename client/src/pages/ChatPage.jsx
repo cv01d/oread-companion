@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import useStore from '../store/useStore';
 import ChatInterface from '../components/chat/ChatInterface';
+import WorldStatePanel from '../components/chat/WorldStatePanel';
 
 // Default avatar
 const DEFAULT_AVATAR = '/echo.svg';
@@ -31,6 +32,7 @@ export default function ChatPage() {
   const storyNotes = useStore((state) => state.storyNotes);
   const saveStoryNotes = useStore((state) => state.saveStoryNotes);
   const loadStoryNotes = useStore((state) => state.loadStoryNotes);
+  const loadWorldState = useStore((state) => state.loadWorldState);
 
   // Load messages and story notes when session changes
   useEffect(() => {
@@ -50,8 +52,9 @@ export default function ChatPage() {
       lastLoadedSessionId.current = currentSessionId;
       loadMessageHistory(currentSessionId);
       loadStoryNotes(currentSessionId);
+      loadWorldState(currentSessionId);
     }
-  }, [currentSessionId, loadMessageHistory, loadStoryNotes, saveStoryNotes]);
+  }, [currentSessionId, loadMessageHistory, loadStoryNotes, saveStoryNotes, loadWorldState]);
 
   // Auto-create session on first message if none exists
   useEffect(() => {
@@ -166,6 +169,7 @@ export default function ChatPage() {
       </div>
 
       <div className="chat-page__main-area">
+        {currentSessionId && <WorldStatePanel />}
         <ChatInterface
           messages={messages}
           onSendMessage={handleSendMessage}

@@ -6,6 +6,9 @@ import { render, act } from '@testing-library/react';
 vi.mock('../components/chat/ChatInterface', () => ({
   default: () => <div data-testid="chat-interface" />,
 }));
+vi.mock('../components/chat/WorldStatePanel', () => ({
+  default: () => null,
+}));
 // We need to control currentSessionId between renders, so use a mutable object
 const storeState = {
   messages: [],
@@ -23,6 +26,7 @@ const storeState = {
   storyNotes: '',
   loadStoryNotes: vi.fn(),
   saveStoryNotes: vi.fn(),
+  loadWorldState: vi.fn(),
 };
 
 vi.mock('../store/useStore', () => ({

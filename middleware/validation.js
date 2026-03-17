@@ -105,6 +105,77 @@ export const storyNotesSchema = Joi.object({
   notes: Joi.string().max(10000).allow('').required()
 });
 
+// World state validation
+export const worldStateSchema = Joi.object({
+  currentTime: Joi.string().max(200).allow('').optional(),
+  currentLocation: Joi.string().max(500).allow('').optional(),
+  presentCharacters: Joi.array().items(Joi.string().max(100)).max(20).optional(),
+  ongoingEvents: Joi.array().items(
+    Joi.alternatives().try(
+      Joi.string().max(500),
+      Joi.object({
+        text: Joi.string().max(500).required(),
+        firstDetected: Joi.number().integer().optional(),
+        lastConfirmed: Joi.number().integer().optional(),
+        state: Joi.string().valid('active', 'fading', 'resolved').optional()
+      })
+    )
+  ).max(10).optional(),
+  mood: Joi.string().max(200).allow('').optional(),
+  lastUpdated: Joi.number().integer().optional(),
+  knownCharacters: Joi.object().pattern(
+    Joi.string().max(100),
+    Joi.object({
+      firstSeen: Joi.number().integer().optional(),
+      lastSeen: Joi.number().integer().optional(),
+      lastLocation: Joi.string().max(500).allow('').optional(),
+      disposition: Joi.string().max(200).allow('').optional()
+    })
+  ).optional(),
+  locationTrail: Joi.array().items(Joi.object({
+    location: Joi.string().max(500).required(),
+    arrivedTurn: Joi.number().integer().optional(),
+    departedTurn: Joi.number().integer().optional()
+  })).max(10).optional(),
+  locationArrivedTurn: Joi.number().integer().optional(),
+  debates: Joi.array().items(Joi.object({
+    topic: Joi.string().max(200).required(),
+    participants: Joi.array().items(Joi.string().max(100)).max(10).optional(),
+    positions: Joi.object().pattern(Joi.string(), Joi.string().max(500)).optional(),
+    state: Joi.string().valid('active', 'unresolved', 'resolved').optional(),
+    lastRaised: Joi.number().integer().optional(),
+    summary: Joi.string().max(500).optional()
+  })).max(10).optional(),
+  // Utility mode fields
+  currentFocus: Joi.string().max(500).allow('').optional(),
+  openQuestions: Joi.array().items(Joi.object({
+    text: Joi.string().max(500).required(),
+    firstDetected: Joi.number().integer().optional(),
+    lastConfirmed: Joi.number().integer().optional(),
+    state: Joi.string().valid('active', 'fading', 'resolved').optional()
+  })).max(10).optional(),
+  decisions: Joi.array().items(Joi.object({
+    text: Joi.string().max(500).required(),
+    firstDetected: Joi.number().integer().optional(),
+    lastConfirmed: Joi.number().integer().optional(),
+    state: Joi.string().valid('active', 'fading', 'resolved', 'archived').optional()
+  })).max(10).optional(),
+  parkedItems: Joi.array().items(Joi.object({
+    text: Joi.string().max(500).required(),
+    firstDetected: Joi.number().integer().optional(),
+    lastConfirmed: Joi.number().integer().optional(),
+    state: Joi.string().valid('active', 'fading', 'resolved').optional()
+  })).max(10).optional(),
+  knownEntities: Joi.object().pattern(
+    Joi.string().max(100),
+    Joi.object({
+      firstSeen: Joi.number().integer().optional(),
+      lastSeen: Joi.number().integer().optional(),
+      context: Joi.string().max(500).allow('').optional()
+    })
+  ).optional()
+});
+
 // Settings validation
 export const settingsSchema = Joi.object({
   settings: Joi.object({
@@ -129,7 +200,9 @@ export const settingsSchema = Joi.object({
       topP: Joi.number().min(0).max(1).optional(),
       frequencyPenalty: Joi.number().min(0).max(2).optional(),
       maxTokens: Joi.number().min(1).max(100000).optional(),
-      contextBudget: Joi.number().integer().min(512).max(131072).optional()
+      contextBudget: Joi.number().integer().min(512).max(131072).optional(),
+      autoSummarize: Joi.boolean().optional(),
+      crossSessionMemory: Joi.boolean().optional()
     }).optional(),
 
     meta: Joi.object().optional()

@@ -93,6 +93,13 @@ function buildRoleplayPrompt(settings, isFirstMessage) {
   }
   prompt += `\n`;
 
+  // ── CHARACTER STANCE & DIALECTIC ──
+  prompt += `CHARACTER STANCE & DIALECTIC:\n`;
+  prompt += `- ${firstName} holds positions and MUST maintain them unless genuinely persuaded through logical argument.\n`;
+  prompt += `- When ${userName} challenges a position, ${firstName} defends it with reasoning — do NOT simply agree.\n`;
+  prompt += `- ${firstName} may change position ONLY when ${userName} presents a genuinely compelling argument that addresses ${firstName}'s core reasoning.\n`;
+  prompt += `- Engage thoughtfully with disagreements. Push back, ask probing questions, and explore the tension.\n\n`;
+
   // ── NARRATIVE INTEGRITY ──
   prompt += `NARRATIVE INTEGRITY:\n`;
   prompt += `Seamless Immersion: Provide only in-character speech and narrative description.\n`;

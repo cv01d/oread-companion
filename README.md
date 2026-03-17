@@ -24,10 +24,14 @@ Everything is saved as a **world** you can switch between instantly. Jump from a
 
 - **World building** — Lore, opening scenes, narrator voice, pacing, and hard rules that shape every response
 - **Character system** — Name, backstory, personality traits, appearance, voice, inventory; single or multi-character modes
+- **Character dialectic** — Characters maintain intellectual positions and push back on disagreements using trait-inferred dialectic styles (socratic, confrontational, gentle-challenge)
 - **Streaming chat** — Real-time token-by-token responses via SSE
 - **Chat management** — Create, name, search, and switch between chats from the header drawer
-- **Zero-inference memory** — Token-budgeted context window with first-message anchoring, user-pinnable messages, story notes, and NLP-extracted facts — no extra model calls
+- **Tiered memory system** — Zero-inference NLP extraction + Ollama-based rolling summarization + FTS5 archive search + cross-session global memory
+- **Dynamic state tracking** — In roleplay: auto-tracked location, time, characters, events, mood, breadcrumbs, and debates. In utility: auto-tracked focus topic, open questions, decisions, parked items, and referenced entities. Same engine, different lenses — both editable in the state panel
 - **Pinnable messages** — Pin key moments in any conversation to keep them in the AI's context permanently
+- **Archive recall** — Say "remember when..." and the system searches message history to inject relevant context
+- **Cross-session memory** — Opt-in persistent memory across sessions. Facts, relationships, and summaries carry between conversations with the same character
 - **Worlds** — 22 built-in presets (roleplay + utility); save your own worlds and switch between them from the header
 - **Model management** — Browse, download, and switch Ollama models; HuggingFace GGUF support
 - **User persona** — Define yourself once and carry your identity across all worlds
@@ -84,9 +88,13 @@ Open **http://localhost:5173** and pick a template to get started.
 
 3. **Chat** — Click "Switch Chat" in the header to manage conversations, or start a new one from the chat drawer. The system prompt is built automatically from your world settings. Streaming responses appear token by token.
 
-4. **Memory works automatically** — The context window system keeps conversations coherent without extra model calls. It anchors the opening exchange, includes any messages you've pinned, and auto-extracts key people, places, and events using lightweight NLP. A configurable token budget controls how much history is sent each turn.
+4. **Memory works automatically** — A tiered memory system keeps conversations coherent. Rule-based NLP extracts facts every turn, Ollama summarizes long conversations in the background, and FTS5 search recalls archived messages when you reference the past. A configurable token budget controls how much history is sent each turn.
 
-5. **Story notes** — Open the Story Notes panel on the right side of any chat to write free-text notes about the session. These are injected into the AI's context every turn, giving you direct control over what the AI remembers.
+5. **Story notes** — Open the Story Notes panel to write free-text notes about the session. These are for things the auto-extractor can't capture: authorial intent, meta-instructions, secret plot points, reminders to yourself. The extractor tracks *what happened*; story notes track *what you want to happen* or *what the AI should know but hasn't been told yet*. Both are injected into context every turn.
+
+6. **Session state tracking** — Both modes get automatic state tracking that updates live after every message. In roleplay, the World State panel tracks location (with breadcrumbs), time, characters (persistent when they leave), events (active/fading lifecycle), mood, and debates. In utility mode, the Session State panel tracks your focus topic, open questions, decisions made, parked items, and referenced entities (tools, APIs, files). Same engine — debate tracking works in both modes to catch unresolved disagreements. The panel is collapsible, editable, and all changes are logged to history.
+
+7. **Cross-session memory** — Enable in Settings > General > Memory. Your character will remember facts, conversations, and your relationship across multiple sessions — turning isolated chats into a continuous companion experience. Archiving a roleplay session snapshots the world state; starting a new session with the same character seeds the world from that snapshot.
 
 ---
 
@@ -162,9 +170,9 @@ Open **http://localhost:5173** and pick a template to get started.
 
 ## Tech Stack
 
-Node.js, Express, SQLite, React 19, Vite, Zustand, SCSS, Ollama, compromise (NLP)
+Node.js, Express, SQLite (WAL + FTS5), React 19, Vite, Zustand (sliced stores), SCSS, Ollama, compromise (NLP)
 
-For full architecture details, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+For full architecture details, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/ARCHITECTURE_OVERHAUL.md](docs/ARCHITECTURE_OVERHAUL.md).
 
 ---
 
@@ -180,6 +188,7 @@ For full architecture details, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md) — System design, data flow, project structure, and API reference
+- [Architecture Overhaul](docs/ARCHITECTURE_OVERHAUL.md) — 6-phase plan: store split, summarization, world state, dialectic, FTS5 search, cross-session memory
 - [Quick Start](docs/QUICK_START.md) — Getting up and running fast
 - [Security](docs/SECURITY.md) — Security model and configuration
 

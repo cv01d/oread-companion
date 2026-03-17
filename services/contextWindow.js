@@ -12,13 +12,17 @@ function estimateTokens(text) {
 }
 
 /**
- * Build a compact context block from story notes and extracted facts.
+ * Build a compact context block from story notes, rolling summary, and extracted facts.
  */
-function buildContextBlock(storyNotes, extractedFacts) {
+function buildContextBlock(storyNotes, extractedFacts, rollingSummary, worldState, characterStances, globalContext, mode) {
   const parts = [];
 
   if (storyNotes && storyNotes.trim()) {
     parts.push(`[Story Notes]\n${storyNotes.trim()}`);
+  }
+
+  if (rollingSummary && rollingSummary.trim()) {
+    parts.push(`[Conversation Summary]\n${rollingSummary.trim()}`);
   }
 
   if (extractedFacts && extractedFacts.length > 0) {
@@ -46,6 +50,166 @@ function buildContextBlock(storyNotes, extractedFacts) {
     }
   }
 
+  if (worldState && Object.keys(worldState).length > 0) {
+    if (mode === 'roleplay') {
+      // === Roleplay: [World State] ===
+      const wsLines = [];
+      if (worldState.currentTime) wsLines.push(`Time: ${worldState.currentTime}`);
+      if (worldState.currentLocation) wsLines.push(`Location: ${worldState.currentLocation}`);
+
+      if (worldState.locationTrail?.length > 0) {
+        const recent = worldState.locationTrail.slice(-3);
+        const crumbs = recent.map(loc => {
+          const turnsAgo = (worldState.lastUpdated || 0) - (loc.departedTurn || 0);
+          return `${loc.location} (left ${turnsAgo} turns ago)`;
+        });
+        wsLines.push(`Previously: ${crumbs.join(', ')}`);
+      }
+
+      if (worldState.presentCharacters?.length) wsLines.push(`Present: ${worldState.presentCharacters.join(', ')}`);
+
+      if (worldState.knownCharacters) {
+        const presentSet = new Set((worldState.presentCharacters || []).map(c => c.toLowerCase()));
+        const lastSeen = [];
+        for (const [key, data] of Object.entries(worldState.knownCharacters)) {
+          if (!presentSet.has(key)) {
+            const turnsAgo = (worldState.lastUpdated || 0) - (data.lastSeen || 0);
+            if (turnsAgo <= 30) {
+              const name = key.charAt(0).toUpperCase() + key.slice(1);
+              lastSeen.push(`${name} (${turnsAgo} turns ago${data.lastLocation ? ', at ' + data.lastLocation : ''})`);
+            }
+          }
+        }
+        if (lastSeen.length > 0) wsLines.push(`Last seen: ${lastSeen.join(', ')}`);
+      }
+
+      if (worldState.ongoingEvents?.length) {
+        const active = [];
+        const fading = [];
+        for (const event of worldState.ongoingEvents) {
+          if (typeof event === 'string') {
+            active.push(event);
+          } else if (event.state === 'fading') {
+            const age = (worldState.lastUpdated || 0) - (event.firstDetected || 0);
+            fading.push(`${event.text} (first noted ${age} turns ago)`);
+          } else {
+            active.push(event.text);
+          }
+        }
+        if (active.length > 0) wsLines.push(`Ongoing: ${active.join('; ')}`);
+        if (fading.length > 0) wsLines.push(`Fading: ${fading.join('; ')}`);
+      }
+
+      if (worldState.mood) wsLines.push(`Atmosphere: ${worldState.mood}`);
+
+      if (wsLines.length > 0) {
+        parts.push(`[World State]\n${wsLines.join('\n')}`);
+      }
+    } else {
+      // === Utility: [Session State] ===
+      const ssLines = [];
+      if (worldState.currentFocus) ssLines.push(`Focus: ${worldState.currentFocus}`);
+
+      if (worldState.openQuestions?.length > 0) {
+        for (const q of worldState.openQuestions) {
+          if (q.state === 'active') ssLines.push(`Open: ${q.text}`);
+          else if (q.state === 'fading') ssLines.push(`Fading: ${q.text}`);
+        }
+      }
+
+      if (worldState.parkedItems?.length > 0) {
+        for (const p of worldState.parkedItems) {
+          ssLines.push(`Parked: ${typeof p === 'string' ? p : p.text}`);
+        }
+      }
+
+      if (worldState.decisions?.length > 0) {
+        for (const d of worldState.decisions) {
+          if (d.state === 'active') ssLines.push(`Decided: ${d.text}`);
+          else if (d.state === 'fading') {
+            const age = (worldState.lastUpdated || 0) - (d.firstDetected || 0);
+            ssLines.push(`Decided (${age} turns ago): ${d.text}`);
+          }
+        }
+      }
+
+      if (worldState.knownEntities) {
+        const referenced = [];
+        for (const [key, data] of Object.entries(worldState.knownEntities)) {
+          const turnsAgo = (worldState.lastUpdated || 0) - (data.lastSeen || 0);
+          // Only show promoted entities (seen in multiple turns), not single-mention candidates
+          const isPromoted = data.firstSeen < data.lastSeen;
+          if (turnsAgo <= 30 && isPromoted) {
+            referenced.push(`${key}${data.context ? ' (' + data.context + ')' : ''}`);
+          }
+        }
+        if (referenced.length > 0) ssLines.push(`Referenced: ${referenced.join(', ')}`);
+      }
+
+      if (ssLines.length > 0) {
+        parts.push(`[Session State]\n${ssLines.join('\n')}`);
+      }
+    }
+
+    // Active debates (both modes — already uses generic language)
+    if (worldState.debates?.length > 0) {
+      const activeDebates = worldState.debates
+        .filter(d => d.state === 'active' || d.state === 'unresolved')
+        .slice(-2);
+      if (activeDebates.length > 0) {
+        const debateLines = activeDebates.map(d => {
+          const positions = d.positions
+            ? Object.entries(d.positions).map(([name, stance]) => `${name} believes ${stance}`).join('; ')
+            : '';
+          const stateLabel = d.state === 'unresolved' ? 'Unresolved' : 'Active';
+          return `${stateLabel}: ${d.topic}${positions ? ' — ' + positions : ''}${d.summary ? '. ' + d.summary : ''}`;
+        });
+        parts.push(`[Active Debates]\n${debateLines.join('\n')}`);
+      }
+    }
+  }
+
+  if (characterStances && Object.keys(characterStances).length > 0) {
+    const stanceLines = [];
+    for (const [charName, data] of Object.entries(characterStances)) {
+      if (data.positions?.length > 0) {
+        for (const pos of data.positions) {
+          stanceLines.push(`${charName} ${pos.stance || pos.topic}${pos.reasoning ? ` (because: ${pos.reasoning})` : ''}`);
+        }
+      }
+      if (data.dialecticMode) {
+        stanceLines.push(`Dialectic approach: ${data.dialecticMode} — defend positions through reasoning, don't simply agree`);
+      }
+    }
+    if (stanceLines.length > 0) {
+      parts.push(`[Character Positions]\n${stanceLines.join('\n')}`);
+    }
+  }
+
+  if (globalContext) {
+    if (globalContext.relationship) {
+      const rel = globalContext.relationship;
+      const relLines = [];
+      relLines.push(`You have met ${globalContext.userName || 'this person'} ${rel.interaction_count} times before.`);
+      if (rel.relationship_summary) relLines.push(`Relationship: ${rel.relationship_summary}`);
+      if (rel.trust_level !== undefined) {
+        const level = rel.trust_level > 0.7 ? 'high' : rel.trust_level > 0.4 ? 'moderate' : 'low';
+        relLines.push(`Trust level: ${level}`);
+      }
+      let moments = [];
+      try { moments = JSON.parse(rel.key_moments || '[]'); } catch (e) { /* */ }
+      if (moments.length > 0) {
+        relLines.push(`Key shared moments: ${moments.slice(-3).join('; ')}`);
+      }
+      parts.push(`[Relationship History]\n${relLines.join('\n')}`);
+    }
+
+    if (globalContext.memories?.length > 0) {
+      const memLines = globalContext.memories.map(m => `- ${m.content}`);
+      parts.push(`[Long-term Memory]\n${memLines.join('\n')}`);
+    }
+  }
+
   return parts.join('\n\n');
 }
 
@@ -60,7 +224,7 @@ function buildContextBlock(storyNotes, extractedFacts) {
  * @param {number} params.contextBudget - Total token budget
  * @returns {{ messages: Array, contextBlock: string }}
  */
-export function selectMessages({ messages, systemPrompt, storyNotes, extractedFacts, contextBudget }) {
+export function selectMessages({ messages, systemPrompt, storyNotes, extractedFacts, contextBudget, rollingSummary, worldState, characterStances, recalledMessages, globalContext, mode }) {
   if (!messages || messages.length === 0) {
     return { messages: [], contextBlock: '' };
   }
@@ -72,7 +236,7 @@ export function selectMessages({ messages, systemPrompt, storyNotes, extractedFa
   budget -= systemTokens;
 
   // Build context block from story notes + extracted facts
-  const contextBlock = buildContextBlock(storyNotes, extractedFacts);
+  const contextBlock = buildContextBlock(storyNotes, extractedFacts, rollingSummary || '', worldState, characterStances, globalContext, mode);
   const contextTokens = estimateTokens(contextBlock);
   budget -= contextTokens;
 
@@ -175,5 +339,21 @@ export function selectMessages({ messages, systemPrompt, storyNotes, extractedFa
     });
   }
 
-  return { messages: result, contextBlock };
+  // Append recalled messages to context block if present
+  let finalContextBlock = contextBlock;
+  if (recalledMessages && recalledMessages.length > 0) {
+    const recalledLines = recalledMessages.map(m =>
+      `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content.substring(0, 300)}${m.content.length > 300 ? '...' : ''}`
+    );
+    const recalledBlock = `[Recalled from Archive]\n${recalledLines.join('\n')}`;
+    const recalledTokens = estimateTokens(recalledBlock);
+    // Only include if we have budget remaining
+    if (budget - recalledTokens >= 0) {
+      finalContextBlock = finalContextBlock
+        ? finalContextBlock + '\n\n' + recalledBlock
+        : recalledBlock;
+    }
+  }
+
+  return { messages: result, contextBlock: finalContextBlock };
 }

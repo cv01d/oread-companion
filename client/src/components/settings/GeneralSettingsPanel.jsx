@@ -131,6 +131,44 @@ export default function GeneralSettingsPanel({ settings, onChange, models = [] }
       </div>
 
       <div className="general-settings-panel__section">
+        <h4 className="general-settings-panel__section-title">Memory</h4>
+
+        <div className="general-settings-panel__field">
+          <label className="general-settings-panel__checkbox-label">
+            <input
+              type="checkbox"
+              checked={general.autoSummarize !== false}
+              onChange={(e) => handleFieldChange('autoSummarize', e.target.checked)}
+              className="general-settings-panel__checkbox"
+            />
+            <span>Auto-summarize Conversations</span>
+          </label>
+          <p className="general-settings-panel__hint">
+            Automatically summarize long conversations using the active model. Summaries are generated
+            in the background after every ~15 messages and help the AI remember earlier context without
+            using excessive tokens.
+          </p>
+        </div>
+
+        <div className="general-settings-panel__field">
+          <label className="general-settings-panel__checkbox-label">
+            <input
+              type="checkbox"
+              checked={general.crossSessionMemory === true}
+              onChange={(e) => handleFieldChange('crossSessionMemory', e.target.checked)}
+              className="general-settings-panel__checkbox"
+            />
+            <span>Cross-Session Memory</span>
+          </label>
+          <p className="general-settings-panel__hint">
+            Enable persistent memory across sessions. Facts, relationships, and summaries are
+            shared between conversations with the same character, creating a continuous companion
+            experience. Opt-in — disabled by default.
+          </p>
+        </div>
+      </div>
+
+      <div className="general-settings-panel__section">
         <h4 className="general-settings-panel__section-title">Features</h4>
 
         {/* Hidden for now - Future features

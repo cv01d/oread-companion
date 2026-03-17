@@ -11,12 +11,15 @@ import ollamaService from './services/ollama.js';
 import database from './services/database.js';
 import { initializeCharacters } from './controllers/characterController.js';
 import { selectMessages } from './services/contextWindow.js';
-import { extractFacts } from './services/factExtractor.js';
+import { processPostChat } from './services/postChatProcessor.js';
+import { searchMessages, detectRecallTriggers } from './services/memorySearch.js';
+import { getRelevantGlobalMemories } from './services/globalMemory.js';
 
 // Routes
 import sessionsRouter from './routes/sessions.js';
 import charactersRouter from './routes/characters.js';
 import templatesRouter from './routes/templates.js';
+import memoryRouter from './routes/memory.js';
 
 // Middleware
 import {
@@ -110,6 +113,7 @@ app.get('/api/csrf-token', (req, res) => {
 app.use('/api/sessions', sessionsRouter);
 app.use('/api/characters', charactersRouter);
 app.use('/api/templates', templatesRouter);
+app.use('/api/memory', memoryRouter);
 
 // ===== HEALTH CHECK =====
 
@@ -224,26 +228,74 @@ app.post('/api/chat', validate(chatSchema), asyncHandler(async (req, res) => {
           [sessionId]
         );
 
-        // Load story notes + extracted facts from session
+        // Load session context data
         const session = await database.get(
-          `SELECT story_notes, extracted_facts FROM sessions WHERE id = ?`,
+          `SELECT story_notes, extracted_facts, rolling_summary, world_state, character_stances FROM sessions WHERE id = ?`,
           [sessionId]
         );
 
         const storyNotes = session?.story_notes || '';
+        const rollingSummary = session?.rolling_summary || '';
+        let worldStateData = {};
+        try { worldStateData = JSON.parse(session?.world_state || '{}'); } catch (e) { /* invalid JSON */ }
         let extractedFactsData = [];
-        try {
-          extractedFactsData = JSON.parse(session?.extracted_facts || '[]');
-        } catch (e) { /* invalid JSON, ignore */ }
+        try { extractedFactsData = JSON.parse(session?.extracted_facts || '[]'); } catch (e) { /* invalid JSON */ }
+        let characterStancesData = {};
+        try { characterStancesData = JSON.parse(session?.character_stances || '{}'); } catch (e) { /* invalid JSON */ }
 
         const contextBudget = settings?.general?.contextBudget || 4096;
+
+        // Check for recall triggers in user message
+        const userContent = messages[messages.length - 1]?.content || '';
+        let recalledMessages = [];
+        const { needsRecall, searchTerms } = detectRecallTriggers(userContent);
+        if (needsRecall) {
+          for (const term of searchTerms) {
+            const results = await searchMessages(sessionId, term, { limit: 3 });
+            recalledMessages.push(...results);
+          }
+          // Deduplicate by content
+          const seen = new Set();
+          recalledMessages = recalledMessages.filter(m => {
+            const key = m.content.substring(0, 100);
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+        }
+
+        // Load cross-session global memory if enabled
+        let globalContext = null;
+        const crossSessionEnabled = settings?.general?.crossSessionMemory === true;
+        if (crossSessionEnabled) {
+          const characterName = settings?.roleplay?.character?.name;
+          const userName = settings?.userPersona?.name;
+          if (characterName && userName) {
+            try {
+              const { memories, relationship } = await getRelevantGlobalMemories(
+                characterName, userName, userContent, { limit: 10 }
+              );
+              if (relationship || memories.length > 0) {
+                globalContext = { memories, relationship, userName };
+              }
+            } catch (err) {
+              console.error('Global memory load error:', err);
+            }
+          }
+        }
 
         const { messages: windowedMessages, contextBlock } = selectMessages({
           messages: dbMessages.map(m => ({ role: m.role, content: m.content, pinned: !!m.pinned })),
           systemPrompt: systemPrompt || '',
           storyNotes,
           extractedFacts: extractedFactsData,
-          contextBudget
+          contextBudget,
+          rollingSummary,
+          worldState: worldStateData,
+          characterStances: characterStancesData,
+          recalledMessages,
+          globalContext,
+          mode: settings?.mode
         });
 
         messagesToSend = windowedMessages;
@@ -289,29 +341,15 @@ app.post('/api/chat', validate(chatSchema), asyncHandler(async (req, res) => {
       // Emit assistant message ID
       res.write(`data: ${JSON.stringify({ meta: 'assistant_saved', messageId: assistantMessageId })}\n\n`);
 
-      // Background: extract facts from new messages (no inference, pure NLP)
-      try {
-        const userContent = messages[messages.length - 1]?.content || '';
-        const turnNumber = await database.get(
-          `SELECT COUNT(*) as count FROM messages WHERE session_id = ?`,
-          [sessionId]
-        );
-        const newFacts = extractFacts(userContent, assistantResponse, Math.floor((turnNumber?.count || 0) / 2));
-        if (newFacts.length > 0) {
-          const session = await database.get(
-            `SELECT extracted_facts FROM sessions WHERE id = ?`,
-            [sessionId]
-          );
-          const existing = JSON.parse(session?.extracted_facts || '[]');
-          const merged = [...existing, ...newFacts].slice(-50);
-          await database.run(
-            `UPDATE sessions SET extracted_facts = ? WHERE id = ?`,
-            [JSON.stringify(merged), sessionId]
-          );
-        }
-      } catch (err) {
-        console.error('Fact extraction error:', err);
-      }
+      // Post-chat processing: fact extraction, summarization, world state
+      processPostChat({
+        sessionId,
+        userContent: messages[messages.length - 1]?.content || '',
+        assistantResponse,
+        model,
+        settings,
+        isDevelopment: CONFIG.isDevelopment
+      });
     }
 
     res.end();

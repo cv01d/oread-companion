@@ -77,3 +77,36 @@ export function extractFacts(userMessage, assistantResponse, turn = 0) {
 
   return facts;
 }
+
+/**
+ * Deduplicate and cap extracted facts with turn-age awareness.
+ * Replaces the naive .slice(-50) approach.
+ *
+ * @param {Array<{type: string, text: string, turn: number}>} existing - Previously stored facts
+ * @param {Array<{type: string, text: string, turn: number}>} newFacts - Newly extracted facts
+ * @param {Object} options
+ * @param {number} options.maxFacts - Maximum facts to keep (default 80)
+ * @param {number} options.maxTurnAge - Drop facts older than this many turns (default 40)
+ * @returns {Array<{type: string, text: string, turn: number}>}
+ */
+export function deduplicateAndCap(existing, newFacts, { maxFacts = 80, maxTurnAge = 40 } = {}) {
+  const currentTurn = newFacts.length > 0 ? newFacts[0].turn : (existing.length > 0 ? existing[existing.length - 1].turn : 0);
+  const all = [...existing, ...newFacts];
+
+  // Deduplicate: later facts overwrite earlier ones (fresher data wins)
+  const seen = new Map();
+  for (const fact of all) {
+    const key = `${fact.type}:${fact.text.toLowerCase()}`;
+    seen.set(key, fact);
+  }
+
+  let deduped = [...seen.values()];
+
+  // Remove facts older than maxTurnAge
+  if (currentTurn > 0) {
+    deduped = deduped.filter(f => currentTurn - (f.turn || 0) < maxTurnAge);
+  }
+
+  // Cap at maxFacts, keeping newest
+  return deduped.slice(-maxFacts);
+}

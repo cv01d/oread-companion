@@ -53,7 +53,9 @@ export const DEFAULT_SETTINGS = {
     topP: 0.9,
     frequencyPenalty: 1.1,
     maxTokens: 2048,
-    contextBudget: 4096
+    contextBudget: 4096,
+    autoSummarize: true,
+    crossSessionMemory: false
   },
 
   meta: {

@@ -2560,6 +2560,8 @@ $spacing-mobile-2xl: 1.2rem;
     &__main-area {
       width: 100%;
       flex: 1;
+      min-height: 0;
+      transition: margin-top 0.3s ease;
     }
   }
 
