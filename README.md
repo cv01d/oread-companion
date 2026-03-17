@@ -172,8 +172,6 @@ Open **http://localhost:5173** and pick a template to get started.
 
 Node.js, Express, SQLite (WAL + FTS5), React 19, Vite, Zustand (sliced stores), SCSS, Ollama, compromise (NLP)
 
-For full architecture details, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/ARCHITECTURE_OVERHAUL.md](docs/ARCHITECTURE_OVERHAUL.md).
-
 ---
 
 ## Screenshots
