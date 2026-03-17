@@ -173,7 +173,17 @@ export const worldStateSchema = Joi.object({
       lastSeen: Joi.number().integer().optional(),
       context: Joi.string().max(500).allow('').optional()
     })
-  ).optional()
+  ).optional(),
+  // Sentiment tracking
+  currentSentiment: Joi.object({
+    label: Joi.string().valid('positive', 'neutral', 'negative').required(),
+    score: Joi.number().min(0).max(1).required()
+  }).optional(),
+  sentimentTrail: Joi.array().items(Joi.object({
+    label: Joi.string().valid('positive', 'neutral', 'negative').required(),
+    score: Joi.number().min(0).max(1).required(),
+    turn: Joi.number().integer().required()
+  })).max(10).optional()
 });
 
 // Settings validation

@@ -407,6 +407,22 @@ export default function WorldStatePanel() {
               {renderKnownEntities()}
             </>
           )}
+          {worldState.currentSentiment && (
+            <div className={styles.field}>
+              <span className={styles.label}>Sentiment</span>
+              <span className={`${styles.sentimentValue} ${styles[`sentiment_${worldState.currentSentiment.label}`]}`}>
+                {worldState.currentSentiment.label}
+                {worldState.sentimentTrail?.length > 1 && (() => {
+                  const trail = worldState.sentimentTrail;
+                  const prev = trail[trail.length - 2];
+                  if (prev.label !== worldState.currentSentiment.label) {
+                    return ` (was ${prev.label})`;
+                  }
+                  return ' (stable)';
+                })()}
+              </span>
+            </div>
+          )}
           {renderDebates()}
           {worldStateHistory?.length > 0 && (
             <div className={styles.subsection}>
