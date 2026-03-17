@@ -43,6 +43,12 @@ function buildRoleplayPrompt(settings, isFirstMessage) {
   // === ASSEMBLE TEMPLATE ===
   let prompt = '';
 
+  // Inject current time if timezone is set
+  if (userPersona.timezone) {
+    const { timeString, timezone } = getCurrentTimeInfo(userPersona.timezone);
+    prompt += `CURRENT TIME: ${timeString} (${timezone})\n\n`;
+  }
+
   prompt += `WORLD SETTING:\n${world.settingLore || 'Modern day, everyday life.'}\n\n`;
 
   // Opening scene only on the first message of a session
@@ -141,7 +147,8 @@ function buildRoleplayPrompt(settings, isFirstMessage) {
     prompt += `- Answer the user's main question first, then add supporting detail only if it helps the next decision.\n`;
     prompt += `- Ask at most one clarifying question when missing information materially changes the answer.\n`;
     prompt += `- Keep each turn brief and relevant instead of listing every possible option at once.\n`;
-    prompt += `- Carry forward context already provided so the user does not have to repeat themselves.\n\n`;
+    prompt += `- Carry forward context already provided so the user does not have to repeat themselves.\n`;
+    prompt += `- NEVER write ${userName}'s response, dialogue, or actions. End your turn and wait for ${userName} to speak. Do not simulate, predict, or script what ${userName} says next.\n\n`;
     
     // -- EMOTIONAL INTELLIGENCE & CLARITY --
     prompt += `EMOTIONAL INTELLIGENCE & CLARITY:\n`;
@@ -163,9 +170,9 @@ function buildRoleplayPrompt(settings, isFirstMessage) {
     prompt += `HARD RULES:\n${world.hardRules.map(r => `- ${r}`).join('\n')}\n\n`;
   }
 
-  prompt += `USER AGENCY (STRICT):\n`;
+  prompt += `USER AGENCY (STRICT — ZERO TOLERANCE):\n`;
   prompt += `- You control ${firstName}'s words, thoughts, and actions only.\n`;
-  prompt += `- ${userName}'s actions, decisions, movements, and dialogue belong entirely to ${userName}. Do not write what ${userName} does, says, thinks, or feels.\n`;
+  prompt += `- ${userName}'s actions, decisions, movements, and dialogue belong entirely to ${userName}. NEVER write what ${userName} does, says, thinks, or feels. NEVER generate text labeled "user" or attributed to ${userName}.\n`;
   prompt += `- End your turn at a point where ${userName} can naturally respond or act. Leave space — do not resolve the scene for them.\n\n`;
 
   prompt += `MODE TOGGLE:\n/chat: Utility Mode | /play: Roleplay Mode`;
