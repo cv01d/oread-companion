@@ -36,6 +36,9 @@ export function shouldSearch(text) {
 export async function searchWeb(query, apiKey, { count = 3 } = {}) {
   if (!query || !apiKey) return [];
 
+  // Clean the query — conversational text makes bad search queries
+  query = cleanSearchQuery(query);
+
   try {
     const url = new URL(BRAVE_SEARCH_URL);
     url.searchParams.set('q', query);
@@ -82,4 +85,36 @@ export function formatSearchResults(results) {
   );
 
   return `[Web Search Results — USE THESE AS YOUR PRIMARY SOURCE. Do not rely on training data when search results are available. Cite sources when relevant.]\n${lines.join('\n\n')}`;
+}
+
+/**
+ * Clean a conversational message into a better search query.
+ * Strips filler words, roleplay context, and conversational noise.
+ */
+function cleanSearchQuery(text) {
+  let q = text.trim();
+
+  // Remove roleplay actions in asterisks or parentheses
+  q = q.replace(/\*[^*]+\*/g, '').replace(/\([^)]+\)/g, '');
+
+  // Remove conversational filler
+  q = q.replace(/\b(well|so|hey|ok|alright|actually|basically|like|just|really|please|can you|could you|tell me|I want to know|I was wondering|do you know)\b/gi, '');
+
+  // Remove "and the year is XXXX" → append year directly
+  const yearMatch = q.match(/\b(?:the year is|it's|it is|we're in|this is)\s*(\d{4})\b/i);
+  if (yearMatch) {
+    q = q.replace(/\b(?:and\s+)?(?:the year is|it's|it is|we're in|this is)\s*\d{4}\b/i, '');
+    q = q.trim() + ' ' + yearMatch[1];
+  }
+
+  // Remove excessive punctuation and dots
+  q = q.replace(/\.{2,}/g, ' ').replace(/[!?]{2,}/g, '?');
+
+  // Collapse whitespace
+  q = q.replace(/\s+/g, ' ').trim();
+
+  // If query got too short after cleaning, fall back to original
+  if (q.length < 5) return text.trim();
+
+  return q;
 }
