@@ -183,6 +183,9 @@ Node.js, Express, SQLite (WAL + FTS5), React 19, Vite, Zustand (sliced stores), 
 ![Screenshot 2](screenshots/screenshot-2.png)
 ![Screenshot 3](screenshots/screenshot-3.png)
 ![Screenshot 4](screenshots/screenshot-4.png)
+<img width="1458" height="522" alt="Screenshot 2026-03-24 at 7 02 19 PM" src="https://github.com/user-attachments/assets/3c2c692e-508a-47d2-b2b5-20246971d41d" />
+<img width="1447" height="492" alt="Screenshot 2026-03-24 at 7 02 32 PM" src="https://github.com/user-attachments/assets/8bc94224-f6f4-4967-a104-2ede511e82a8" />
+
 
 ---
 
