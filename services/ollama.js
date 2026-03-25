@@ -42,6 +42,34 @@ class OllamaService {
     }
   }
 
+  async isModelAvailable(modelName) {
+    try {
+      const result = await this.listModels();
+      return result.models.some(m => m.name === modelName || m.name.startsWith(modelName + ':'));
+    } catch {
+      return false;
+    }
+  }
+
+  async extract(model, prompt, { temperature = 0.1, maxTokens = 1024 } = {}) {
+    try {
+      const response = await this.ollama.chat({
+        model,
+        messages: [{ role: 'user', content: prompt }],
+        format: 'json',
+        stream: false,
+        options: {
+          temperature,
+          num_predict: maxTokens
+        }
+      });
+      const text = response.message?.content || '{}';
+      return JSON.parse(text);
+    } catch (error) {
+      throw new Error(`Extraction failed: ${error.message}`);
+    }
+  }
+
   async chat(model, messages, options = {}) {
     try {
       // Build chat request with optional parameters

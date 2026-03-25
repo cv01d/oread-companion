@@ -27,8 +27,8 @@ Everything is saved as a **world** you can switch between instantly. Jump from a
 - **Character dialectic** — Characters maintain intellectual positions and push back on disagreements using trait-inferred dialectic styles (socratic, confrontational, gentle-challenge)
 - **Streaming chat** — Real-time token-by-token responses via SSE
 - **Chat management** — Create, name, search, and switch between chats from the header drawer
-- **Tiered memory system** — Zero-inference NLP extraction + Ollama-based rolling summarization + FTS5 archive search + cross-session global memory
-- **Dynamic state tracking** — In roleplay: auto-tracked location, time, characters, events, mood, breadcrumbs, and debates. In utility: auto-tracked focus topic, open questions, decisions, parked items, and referenced entities. Same engine, different lenses — both editable in the state panel
+- **Tiered memory system** — LLM-based extraction (phi4-mini) + Ollama-based rolling summarization + FTS5 archive search + cross-session global memory
+- **Dynamic state tracking** — In roleplay: auto-tracked location, time, characters (physically present only), events, key discoveries, mood, breadcrumbs, and debates. In utility: auto-tracked focus topic, open questions, decisions, parked items, key insights, and referenced entities. Same engine, different lenses — both editable in the state panel
 - **Pinnable messages** — Pin key moments in any conversation to keep them in the AI's context permanently
 - **Archive recall** — Say "remember when..." and the system searches message history to inject relevant context
 - **Cross-session memory** — Persistent memory across sessions. Facts, relationships, and summaries carry between conversations with the same character
@@ -49,6 +49,7 @@ Everything is saved as a **world** you can switch between instantly. Jump from a
    ```bash
    ollama pull llama2
    ```
+4. **phi4-mini** auto-downloads on first startup if missing — or pull manually: `ollama pull phi4-mini`
 
 ### Install
 
@@ -66,8 +67,8 @@ cd client && npm install && cd ..
 ### Run
 
 ```bash
-# Make sure Ollama is running
-ollama serve
+# Start Ollama (recommended flags for multi-model support)
+OLLAMA_MAX_LOADED_MODELS=2 OLLAMA_NUM_PARALLEL=4 ollama serve
 
 # Terminal 1 — Backend (http://localhost:3001)
 npm run dev
@@ -75,6 +76,8 @@ npm run dev
 # Terminal 2 — Frontend (http://localhost:5173)
 cd client && npm run dev
 ```
+
+> **Why those Ollama flags?** The app runs a dedicated `phi4-mini` model for automatic fact and state extraction alongside your chat model. These flags keep both models loaded in memory so extraction doesn't cause model swapping between turns. Without them, everything still works — just slower on the first extraction call after each chat turn.
 
 Open **http://localhost:5173** and pick a template to get started.
 
@@ -88,11 +91,11 @@ Open **http://localhost:5173** and pick a template to get started.
 
 3. **Chat** — Click "Switch Chat" in the header to manage conversations, or start a new one from the chat drawer. The system prompt is built automatically from your world settings. Streaming responses appear token by token.
 
-4. **Memory works automatically** — A tiered memory system keeps conversations coherent. Rule-based NLP extracts facts every turn, Ollama summarizes long conversations in the background, and FTS5 search recalls archived messages when you reference the past. A configurable token budget controls how much history is sent each turn.
+4. **Memory works automatically** — A tiered memory system keeps conversations coherent. A dedicated `phi4-mini` model extracts facts, tracks world state, and identifies key discoveries every turn. Ollama summarizes long conversations in the background, and FTS5 search recalls archived messages when you reference the past. A configurable token budget controls how much history is sent each turn. If phi4-mini isn't installed yet, it downloads automatically on first startup — chat works normally while it downloads.
 
 5. **Story notes** — Open the Story Notes panel to write free-text notes about the session. These are for things the auto-extractor can't capture: authorial intent, meta-instructions, secret plot points, reminders to yourself. The extractor tracks *what happened*; story notes track *what you want to happen* or *what the AI should know but hasn't been told yet*. Both are injected into context every turn.
 
-6. **Session state tracking** — Both modes get automatic state tracking that updates live after every message. In roleplay, the World State panel tracks location (with breadcrumbs), time, characters (persistent when they leave), events (active/fading lifecycle), mood, and debates. In utility mode, the Session State panel tracks your focus topic, open questions, decisions made, parked items, and referenced entities (tools, APIs, files). Same engine — debate tracking works in both modes to catch unresolved disagreements. The panel is collapsible, editable, and all changes are logged to history.
+6. **Session state tracking** — Both modes get automatic state tracking that updates live after every message. In roleplay, the World State panel tracks location (with breadcrumbs), time, characters physically present (with departure tracking), events (active/fading lifecycle), key discoveries and revelations, mood, and debates. In utility mode, the Session State panel tracks your focus topic, open questions, decisions made, parked items, key insights, and referenced entities (tools, APIs, files). Same engine — debate tracking works in both modes to catch unresolved disagreements. The panel is collapsible, editable, and all changes are logged to history.
 
 7. **Cross-session memory** — Your character remembers facts, conversations, and your relationship across multiple sessions — turning isolated chats into a continuous companion experience. Archiving a session snapshots the world state; starting a new session with the same character seeds the world from that snapshot. Can be disabled in Settings > General if needed.
 
@@ -170,7 +173,7 @@ Open **http://localhost:5173** and pick a template to get started.
 
 ## Tech Stack
 
-Node.js, Express, SQLite (WAL + FTS5), React 19, Vite, Zustand (sliced stores), SCSS, Ollama, compromise (NLP)
+Node.js, Express, SQLite (WAL + FTS5), React 19, Vite, Zustand (sliced stores), SCSS, Ollama (chat + phi4-mini extraction)
 
 ---
 

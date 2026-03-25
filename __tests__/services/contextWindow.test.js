@@ -599,4 +599,289 @@ describe('selectMessages', () => {
         .toBeLessThanOrEqual(resultNoContext.messages.filter(m => m.role !== 'system').length);
     });
   });
+
+  // ========================================================================
+  // World state injection into context block (roleplay mode)
+  // ========================================================================
+  describe('world state injection (roleplay)', () => {
+    const baseParams = {
+      messages: [msg('user', 'Hi')],
+      systemPrompt: '',
+      storyNotes: '',
+      extractedFacts: [],
+      contextBudget: 100000,
+      mode: 'roleplay'
+    };
+
+    it('injects [World State] block with location and time', () => {
+      const result = selectMessages({
+        ...baseParams,
+        worldState: {
+          currentLocation: 'the signal chamber',
+          currentTime: 'evening',
+          lastUpdated: 5
+        }
+      });
+      expect(result.contextBlock).toContain('[World State]');
+      expect(result.contextBlock).toContain('Location: the signal chamber');
+      expect(result.contextBlock).toContain('Time: evening');
+    });
+
+    it('injects present characters', () => {
+      const result = selectMessages({
+        ...baseParams,
+        worldState: {
+          presentCharacters: ['Dr. Osei', 'Aria'],
+          lastUpdated: 5
+        }
+      });
+      expect(result.contextBlock).toContain('Present: Dr. Osei, Aria');
+    });
+
+    it('injects mood/atmosphere', () => {
+      const result = selectMessages({
+        ...baseParams,
+        worldState: { mood: 'Tense', lastUpdated: 5 }
+      });
+      expect(result.contextBlock).toContain('Atmosphere: Tense');
+    });
+
+    it('injects ongoing events with lifecycle states', () => {
+      const result = selectMessages({
+        ...baseParams,
+        worldState: {
+          ongoingEvents: [
+            { text: 'The signal is accelerating', state: 'active', firstDetected: 1, lastConfirmed: 5 },
+            { text: 'Old event fading', state: 'fading', firstDetected: 1, lastConfirmed: 2 }
+          ],
+          lastUpdated: 5
+        }
+      });
+      expect(result.contextBlock).toContain('Ongoing: The signal is accelerating');
+      expect(result.contextBlock).toContain('Fading: Old event fading');
+    });
+
+    it('injects discoveries into world state', () => {
+      const result = selectMessages({
+        ...baseParams,
+        worldState: {
+          discoveries: [
+            { text: 'Signal detected 2 weeks ago at Atacama', state: 'active', firstDetected: 1, lastConfirmed: 5 },
+            { text: 'Over 200 unique sequences received', state: 'active', firstDetected: 2, lastConfirmed: 5 }
+          ],
+          lastUpdated: 5
+        }
+      });
+      expect(result.contextBlock).toContain('Key discoveries:');
+      expect(result.contextBlock).toContain('Signal detected 2 weeks ago at Atacama');
+      expect(result.contextBlock).toContain('Over 200 unique sequences received');
+    });
+
+    it('does not inject resolved discoveries', () => {
+      const result = selectMessages({
+        ...baseParams,
+        worldState: {
+          discoveries: [
+            { text: 'Old resolved finding', state: 'resolved', firstDetected: 1, lastConfirmed: 1 },
+            { text: 'Current active finding', state: 'active', firstDetected: 3, lastConfirmed: 5 }
+          ],
+          lastUpdated: 5
+        }
+      });
+      expect(result.contextBlock).not.toContain('Old resolved finding');
+      expect(result.contextBlock).toContain('Current active finding');
+    });
+
+    it('injects location trail', () => {
+      const result = selectMessages({
+        ...baseParams,
+        worldState: {
+          currentLocation: 'the basement',
+          locationTrail: [
+            { location: 'the library', arrivedTurn: 1, departedTurn: 3 },
+            { location: 'the study', arrivedTurn: 3, departedTurn: 5 }
+          ],
+          lastUpdated: 7
+        }
+      });
+      expect(result.contextBlock).toContain('Previously:');
+      expect(result.contextBlock).toContain('the library');
+      expect(result.contextBlock).toContain('the study');
+    });
+
+    it('injects known characters who are not present', () => {
+      const result = selectMessages({
+        ...baseParams,
+        worldState: {
+          presentCharacters: ['Aria'],
+          knownCharacters: {
+            aria: { firstSeen: 1, lastSeen: 5, lastLocation: '', disposition: 'neutral' },
+            julian: { firstSeen: 1, lastSeen: 3, lastLocation: 'the library', disposition: 'neutral' }
+          },
+          lastUpdated: 5
+        }
+      });
+      expect(result.contextBlock).toContain('Last seen:');
+      expect(result.contextBlock).toContain('Julian');
+      expect(result.contextBlock).toContain('the library');
+    });
+
+    it('builds a complete world state block with all fields', () => {
+      const result = selectMessages({
+        ...baseParams,
+        worldState: {
+          currentLocation: 'the signal chamber',
+          currentTime: 'late evening',
+          presentCharacters: ['Dr. Osei', 'Yuki Tanaka'],
+          ongoingEvents: [
+            { text: 'Signal intensity increasing', state: 'active', firstDetected: 3, lastConfirmed: 5 }
+          ],
+          discoveries: [
+            { text: 'Temporal echolocation theory confirmed', state: 'active', firstDetected: 4, lastConfirmed: 5 }
+          ],
+          mood: 'Tense',
+          knownCharacters: {
+            'dr. osei': { firstSeen: 1, lastSeen: 5, lastLocation: 'the signal chamber', disposition: 'neutral' },
+            'yuki tanaka': { firstSeen: 1, lastSeen: 5, lastLocation: 'the signal chamber', disposition: 'neutral' }
+          },
+          lastUpdated: 5
+        }
+      });
+
+      const ctx = result.contextBlock;
+      expect(ctx).toContain('[World State]');
+      expect(ctx).toContain('Time: late evening');
+      expect(ctx).toContain('Location: the signal chamber');
+      expect(ctx).toContain('Present: Dr. Osei, Yuki Tanaka');
+      expect(ctx).toContain('Signal intensity increasing');
+      expect(ctx).toContain('Temporal echolocation theory confirmed');
+      expect(ctx).toContain('Atmosphere: Tense');
+    });
+  });
+
+  // ========================================================================
+  // Session state injection into context block (utility mode)
+  // ========================================================================
+  describe('session state injection (utility mode)', () => {
+    const baseParams = {
+      messages: [msg('user', 'Hi')],
+      systemPrompt: '',
+      storyNotes: '',
+      extractedFacts: [],
+      contextBudget: 100000,
+      mode: 'normal'
+    };
+
+    it('injects [Session State] block with focus', () => {
+      const result = selectMessages({
+        ...baseParams,
+        worldState: { currentFocus: 'Database Architecture', lastUpdated: 3 }
+      });
+      expect(result.contextBlock).toContain('[Session State]');
+      expect(result.contextBlock).toContain('Focus: Database Architecture');
+    });
+
+    it('injects open questions', () => {
+      const result = selectMessages({
+        ...baseParams,
+        worldState: {
+          openQuestions: [
+            { text: 'Should we use Redis?', state: 'active', firstDetected: 1, lastConfirmed: 3 }
+          ],
+          lastUpdated: 3
+        }
+      });
+      expect(result.contextBlock).toContain('Open: Should we use Redis?');
+    });
+
+    it('injects decisions', () => {
+      const result = selectMessages({
+        ...baseParams,
+        worldState: {
+          decisions: [
+            { text: 'Use SQLite with WAL mode', state: 'active', firstDetected: 2, lastConfirmed: 3 }
+          ],
+          lastUpdated: 3
+        }
+      });
+      expect(result.contextBlock).toContain('Decided: Use SQLite with WAL mode');
+    });
+
+    it('injects parked items', () => {
+      const result = selectMessages({
+        ...baseParams,
+        worldState: {
+          parkedItems: [
+            { text: 'Redis discussion', state: 'active', firstDetected: 2, lastConfirmed: 3 }
+          ],
+          lastUpdated: 3
+        }
+      });
+      expect(result.contextBlock).toContain('Parked: Redis discussion');
+    });
+
+    it('injects discoveries as key insights in session state', () => {
+      const result = selectMessages({
+        ...baseParams,
+        worldState: {
+          discoveries: [
+            { text: 'WAL mode solves concurrent read issue', state: 'active', firstDetected: 2, lastConfirmed: 3 },
+            { text: 'FTS5 outperforms LIKE queries by 10x', state: 'active', firstDetected: 3, lastConfirmed: 3 }
+          ],
+          lastUpdated: 3
+        }
+      });
+      expect(result.contextBlock).toContain('Key insights:');
+      expect(result.contextBlock).toContain('WAL mode solves concurrent read issue');
+      expect(result.contextBlock).toContain('FTS5 outperforms LIKE queries by 10x');
+    });
+
+    it('injects promoted known entities', () => {
+      const result = selectMessages({
+        ...baseParams,
+        worldState: {
+          knownEntities: {
+            sqlite: { firstSeen: 1, lastSeen: 3, context: '' },
+            redis: { firstSeen: 2, lastSeen: 2, context: '' }
+          },
+          lastUpdated: 3
+        }
+      });
+      // Only sqlite is promoted (firstSeen < lastSeen)
+      expect(result.contextBlock).toContain('Referenced:');
+      expect(result.contextBlock).toContain('sqlite');
+      // redis is single-mention — not promoted
+      expect(result.contextBlock).not.toContain('redis');
+    });
+  });
+
+  // ========================================================================
+  // Empty / missing world state does not inject blocks
+  // ========================================================================
+  describe('no world state injection when empty', () => {
+    it('does not inject [World State] when worldState is empty object', () => {
+      const result = selectMessages({
+        messages: [msg('user', 'Hi')],
+        systemPrompt: '',
+        storyNotes: '',
+        extractedFacts: [],
+        contextBudget: 100000,
+        worldState: {},
+        mode: 'roleplay'
+      });
+      expect(result.contextBlock).not.toContain('[World State]');
+    });
+
+    it('does not inject [Session State] when worldState is undefined', () => {
+      const result = selectMessages({
+        messages: [msg('user', 'Hi')],
+        systemPrompt: '',
+        storyNotes: '',
+        extractedFacts: [],
+        contextBudget: 100000,
+        mode: 'normal'
+      });
+      expect(result.contextBlock).not.toContain('[Session State]');
+    });
+  });
 });

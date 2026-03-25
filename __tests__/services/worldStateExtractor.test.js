@@ -1,7 +1,24 @@
-import { describe, it, expect } from 'vitest';
-import { extractWorldState, extractSessionState, diffWorldState, matchEvent } from '../../services/worldStateExtractor.js';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { diffWorldState, matchEvent } from '../../services/worldStateExtractor.js';
 
-// Settings matching the Haunted Romance template
+// Mock the extraction model manager as ready
+vi.mock('../../services/extractionModelManager.js', () => ({
+  default: {
+    isReady: () => true,
+    modelName: 'phi4-mini'
+  }
+}));
+
+// Mock ollamaService.extract to return controlled results
+vi.mock('../../services/ollama.js', () => ({
+  default: {
+    extract: vi.fn()
+  }
+}));
+
+import { extractWorldState, extractSessionState } from '../../services/worldStateExtractor.js';
+import ollamaService from '../../services/ollama.js';
+
 const THORNHAVEN_SETTINGS = {
   mode: 'roleplay',
   roleplay: {
@@ -16,211 +33,757 @@ const THORNHAVEN_SETTINGS = {
   userPersona: { name: 'Aria' }
 };
 
-const THORNHAVEN_TURNS = [
-  {
-    user: 'Hey',
-    assistant: `Ah, there you are. I wondered how long it would take you to find this room. Welcome to Thornhaven. I'm Julian, your ghostly guide to this particular slice of the afterlife. The house seems rather pleased to have company - can't say I blame it. The last architect who tried to 'modernize' the place left in quite a hurry after he discovered the library's tendency to rearrange itself. Shall we start with a tour, or are you more interested in the haunting experience? The house has quite a reputation, you know.`
-  },
-  {
-    user: `I thought ghosts were supposed to hide and not be visible to us.. oh no?!?... I am a ghost aren't I ?`,
-    assistant: `Oh, you're very much alive - but you are in the afterlife, so that's something of a grey area. As for me, well, let's just say the rules here don't quite apply as neatly as they do up there. Or down there, depending on your perspective. The house has its own logic, and I'm simply along for the ride. Speaking of which, have you considered asking it why it chose to bring you here? It tends to be rather particular about its guests.`
-  },
-  {
-    user: `Afterlife!`,
-    assistant: `Precisely. And isn't it grand? You'll find that time flows a bit differently here - we can spend the better part of an afternoon in a single moment if you wish, or race through centuries in the blink of an eye. It all depends on what sort of adventure you're after. Personally, I find the library to be most engaging. The books have a tendency to reach out and grab your attention - sometimes quite literally. Shall we start there?`
-  },
-  {
-    user: `literally? I pause for a moment to consider this. Oh... I have always wanted to exist in wuthering heights? Do you think I could fall in love with Heatcliff... I would make a great Catherine don't you think.. I attempt to fall into your arms and as you reach out to grab I simply fall thru them... landing on the floor and then getting up dusting myself off.. "Well, that was.. not exactly as planned..."`,
-    assistant: `Well, it seems the house has a rather dry sense of humor. As for Wuthering Heights, I'm afraid Heathcliff isn't here - or anywhere in this dimension, come to think of it. The house's library is far more eclectic than that particular romance. You'll find works you've never even dreamed of, let alone read. Oh! Speaking of which, have you noticed how the floorboards are starting to creak? I do hope they're not getting ideas about rearranging themselves again.`
-  },
-  {
-    user: `Well. now .. wait.. I roll my eyes.. first you tell me I am in the afterlife.. and now you tell me the ground is rearranging itself.. a girl has to have something to work with here...`,
-    assistant: `My apologies, it seems we're both still adjusting to your arrival. The house does tend to be rather theatrical about its comings and goings. As for Heathcliff, well, let's just say that romance in the afterlife is complicated at best. But perhaps you'd like a drink? I believe there's some excellent port in the study - assuming it hasn't relocated again.`
-  },
-  {
-    user: `Oh yes indeed I think that would be very welcome... so J.. explain me these rules of love you speak about...`,
-    assistant: `Love here is more of a negotiation than an emotion, to be honest. The house itself has quite the reputation for matchmaking - or mismatching, depending on your perspective. Portions of it can become 'sticky' if you're not careful, and certain rooms have been known to keep guests for decades without them realizing time was passing at all. As for Heathcliff, well, let's just say that particular story ended rather badly. The house tends to be a bit more practical in its arrangements.`
-  },
-  {
-    user: `No candles no moonlight no dark broody wonderfully melancholic, but passionate! very passionate mind you.. love stories.. alright.. well so how does one pass the time in the world of the undead...?`,
-    assistant: `Time itself is the great luxury here - or perhaps the great curse. You can spend a century watching the fire die down to embers, or you can blink and find yourself in an entirely different era altogether. Some souls spend their days reading, others exploring the vast corridors of this ever-shifting house. Personally, I've found that creating new memories is far more rewarding than dwelling on old ones. The house has a way of helping with that, if you're willing to trust its methods.`
-  },
-  {
-    user: `I am absolutely not trusting something that costantly shifts the ground beneath my feet for no reason. Do you hear that house? Good luck.. I smirk at you.`,
-    assistant: `The house does have quite a sense of humor about these things, though it's a bit hard to explain without sounding completely mad. As for trust - well, consider this: the only thing constant here is change itself. The ground beneath your feet might shift, but so do the corridors of time and memory. It's all rather flexible when you think about it that way.`
-  },
-  {
-    user: `So it is like life then, a glorious pain in my ass`,
-    assistant: `Precisely! Though I must say, this version tends to be far more entertaining. The house, for instance, has been known to rearrange itself into quite the comedy routine when guests get too self-serious. It's also rather fond of pranks - the kind that have souls rolling in their spectral bodies with laughter, or frustration, depending on their particular sense of humor.`
-  },
-  {
-    user: `Oh lord so now I have landed in prankster house in the afterlife.. for no reason except placement in a comedic of divine making.. it is not really hell though nor heaven.. something.... or is it.. is this hell? Oh lord what I have done.. I promise.. I do think I tried to be good.. my heart was in the right place even when my feet weren't truly..`,
-    assistant: `Oh, you needn't fret so. This isn't divine punishment - more like cosmic entertainment. The house has its own logic, and it seems to have found your presence amusing. As for what you've done, well, that's not really the point here. In this place, past actions mean little - it's all about how you navigate the present moment. And speaking of which, I believe the study is calling our names again. The port should be just where we left it last time, assuming 'last time' has any meaning in a house that defies temporal logic.`
-  },
-  {
-    user: `I raise an eyebrow fair enough lead the way.. to the study we go`,
-    assistant: `Very well then! Follow me closely now - I wouldn't want you to get lost in the shifting corridors. The house tends to rearrange itself rather unexpectedly, especially when there's a new guest to entertain. Oh, and do watch your step! Some of these floorboards can be quite... mischievous at times.`
-  },
-  {
-    user: `I closely follow behind Julian careful to watch my step, but as I turn to follow his spectral turn of the century figure floating up the stairs in his spectral costume.. I forget to watch my step in my true clumsy nature I miss a step tripping over the floorboards...`,
-    assistant: `Ah! As I feared. The house does seem quite pleased with itself today, doesn't it? Well, no harm done - at least you're still intact. Though I must say, this staircase seems to be enjoying your company rather too much. It's been years since we've had such an... animated guest. Shall we try again? This time, perhaps focus on the back of my head instead of watching where you're going?`
-  },
-  {
-    user: `Right then a large cracking sound occurs the steps break.... I let out a light high pitched scream as I fall thru several floors landing somewhere in.. I look around.. a basement? huh.. what is the place... I call up.. .J?.. JJJJJJ? J? I sigh... well... ok... now I really am in hell... to high for you was dead thornhaven.. who were you anyway? You had to have been someone once.. houses aren't just... beings... so.. how did you happen... I put my figure to my chin thinking for a moment.. while trying to assess my surroundings..`,
-    assistant: `Oh, come now! You're far too dramatic for this place. This isn't hell - it's something far more interesting. As for me, well, let's just say I'm an architect who bit off rather more than he could chew. The house decided to keep me around as its de facto guide after... certain events. It's quite the life, really. Full of surprises! Now then, shall we discuss how you're going to get out of that basement? The stairs appear to be taking a nap for now, so you'll need to find an alternative route.`
-  },
-  {
-    user: `well then I geuss I don't know J .. you built this place... what exactly.. did you build here...`,
-    assistant: `I designed it as a sort of refuge - a place where souls could come and process their afterlives. But the house had other ideas, as they tend to do. It wanted something more... dynamic. So I suppose I built the most unpredictable architectural masterpiece in all of existence. Sometimes I think the whole point is that you can never truly build anything here - it's always building itself around you.`
-  }
-];
-
-/**
- * Run the full dialogue through the extractor, building state incrementally.
- */
-function runFullDialogue(turns, settings) {
-  let state = {};
-  const stateHistory = [];
-  for (let i = 0; i < turns.length; i++) {
-    state = extractWorldState(turns[i].user, turns[i].assistant, state, i + 1, settings);
-    stateHistory.push({ ...state });
-  }
-  return { finalState: state, stateHistory };
-}
-
-describe('extractWorldState — Thornhaven full dialogue', () => {
-  const { finalState, stateHistory } = runFullDialogue(THORNHAVEN_TURNS, THORNHAVEN_SETTINGS);
-
-  describe('produces structured output', () => {
-    it('tracks turn count', () => {
-      expect(finalState.lastUpdated).toBe(THORNHAVEN_TURNS.length);
-    });
-
-    it('populates presentCharacters as a non-empty array', () => {
-      expect(Array.isArray(finalState.presentCharacters)).toBe(true);
-      expect(finalState.presentCharacters.length).toBeGreaterThan(0);
-    });
-
-    it('populates knownCharacters as a non-empty object', () => {
-      expect(typeof finalState.knownCharacters).toBe('object');
-      expect(Object.keys(finalState.knownCharacters).length).toBeGreaterThan(0);
-    });
-
-    it('all character names are clean strings under 50 chars', () => {
-      for (const name of finalState.presentCharacters) {
-        expect(typeof name).toBe('string');
-        expect(name.length).toBeGreaterThan(0);
-        expect(name.length).toBeLessThan(50);
-      }
-    });
-
-    it('known character entries have structural integrity', () => {
-      for (const [key, data] of Object.entries(finalState.knownCharacters)) {
-        expect(typeof key).toBe('string');
-        expect(typeof data.firstSeen).toBe('number');
-        expect(typeof data.lastSeen).toBe('number');
-        expect(data.lastSeen).toBeGreaterThanOrEqual(data.firstSeen);
-        expect(typeof data.disposition).toBe('string');
-      }
-    });
-
-    it('detects a mood from the dialogue', () => {
-      expect(finalState.mood).toBeTruthy();
-      expect(typeof finalState.mood).toBe('string');
-    });
-
-    it('detects at least one location', () => {
-      const hasLocation = finalState.currentLocation || (finalState.locationTrail?.length > 0);
-      expect(hasLocation).toBeTruthy();
-    });
-
-    it('locations are clean strings under 50 chars', () => {
-      if (finalState.currentLocation) {
-        expect(finalState.currentLocation.length).toBeLessThan(50);
-      }
-      for (const loc of (finalState.locationTrail || [])) {
-        expect(loc.location.length).toBeLessThan(50);
-      }
-    });
-
-    it('extracts at least one ongoing event', () => {
-      expect(finalState.ongoingEvents?.length).toBeGreaterThan(0);
-    });
-
-    it('events have valid lifecycle structure', () => {
-      for (const event of (finalState.ongoingEvents || [])) {
-        expect(typeof event).toBe('object');
-        expect(typeof event.text).toBe('string');
-        expect(event.text.length).toBeGreaterThan(10);
-        expect(event.text.length).toBeLessThan(150);
-        expect(['active', 'fading', 'resolved']).toContain(event.state);
-        expect(typeof event.firstDetected).toBe('number');
-        expect(typeof event.lastConfirmed).toBe('number');
-      }
-    });
-  });
-
-  describe('state evolves over the conversation', () => {
-    it('characters accumulate — more known characters at end than beginning', () => {
-      const earlyKnown = Object.keys(stateHistory[1]?.knownCharacters || {}).length;
-      const lateKnown = Object.keys(finalState.knownCharacters || {}).length;
-      expect(lateKnown).toBeGreaterThanOrEqual(earlyKnown);
-    });
-
-    it('state is not identical between first and last turn', () => {
-      const first = stateHistory[0];
-      const last = finalState;
-      // At minimum, lastUpdated should differ
-      expect(last.lastUpdated).toBeGreaterThan(first.lastUpdated);
-      // And more data should exist in the final state
-      const firstSize = JSON.stringify(first).length;
-      const lastSize = JSON.stringify(last).length;
-      expect(lastSize).toBeGreaterThan(firstSize);
-    });
-
-    it('events accumulate across turns', () => {
-      // Count total events seen across all state snapshots
-      let maxEvents = 0;
-      for (const snapshot of stateHistory) {
-        const count = (snapshot.ongoingEvents || []).length;
-        if (count > maxEvents) maxEvents = count;
-      }
-      expect(maxEvents).toBeGreaterThan(0);
-    });
-  });
+beforeEach(() => {
+  vi.clearAllMocks();
 });
 
-describe('extractWorldState — handles edge cases', () => {
-  it('handles empty messages', () => {
-    const state = extractWorldState('', '', {}, 1, THORNHAVEN_SETTINGS);
+// ========================================================================
+// Single-turn extraction tests
+// ========================================================================
+
+describe('extractWorldState — single turn', () => {
+  it('produces structured output from LLM extraction', async () => {
+    ollamaService.extract.mockResolvedValue({
+      currentLocation: 'the library',
+      currentTime: 'evening',
+      presentCharacters: ['Julian Ashworth', 'Aria'],
+      newEvents: ['The stairs collapsed beneath Aria'],
+      mood: 'mysterious'
+    });
+
+    const state = await extractWorldState(
+      'I walk into the library.',
+      'Julian greets you from the shadows.',
+      {}, 1, THORNHAVEN_SETTINGS
+    );
+
     expect(state.lastUpdated).toBe(1);
+    expect(state.currentLocation).toBe('the library');
+    expect(state.currentTime).toBe('evening');
+    expect(state.presentCharacters.length).toBeGreaterThan(0);
+    expect(state.ongoingEvents.length).toBe(1);
+    expect(state.mood).toBe('Mysterious');
   });
 
-  it('handles missing settings gracefully', () => {
-    const state = extractWorldState('Hello', 'Hi there', {}, 1);
-    expect(state.lastUpdated).toBe(1);
-  });
+  it('updates location trail when location changes', async () => {
+    ollamaService.extract.mockResolvedValue({
+      currentLocation: 'the basement',
+      presentCharacters: ['Julian Ashworth'],
+      newEvents: [],
+      mood: null
+    });
 
-  it('preserves existing state when nothing new is detected', () => {
     const existing = {
       currentLocation: 'the library',
-      mood: 'Mysterious',
-      presentCharacters: ['Julian'],
-      knownCharacters: { julian: { firstSeen: 1, lastSeen: 1, lastLocation: '', disposition: 'neutral' } }
+      locationArrivedTurn: 1,
+      locationTrail: [],
+      presentCharacters: ['Julian Ashworth'],
+      knownCharacters: {}
     };
-    const state = extractWorldState('ok', 'indeed', existing, 2, THORNHAVEN_SETTINGS);
-    expect(state.knownCharacters.julian).toBeTruthy();
+
+    const state = await extractWorldState('I go down.', 'You descend.', existing, 3, THORNHAVEN_SETTINGS);
+    expect(state.currentLocation).toBe('the basement');
+    expect(state.locationTrail.length).toBe(1);
+    expect(state.locationTrail[0].location).toBe('the library');
+  });
+
+  it('applies event lifecycle — aging events', async () => {
+    ollamaService.extract.mockResolvedValue({
+      newEvents: [],
+      presentCharacters: []
+    });
+
+    const existing = {
+      ongoingEvents: [
+        { text: 'Old event from long ago', firstDetected: 1, lastConfirmed: 1, state: 'active' }
+      ],
+      knownCharacters: {}
+    };
+
+    const state = await extractWorldState('ok', 'indeed', existing, 25, THORNHAVEN_SETTINGS);
+    expect(state._resolvedEvents?.length).toBeGreaterThan(0);
+  });
+
+  it('validates mood against allowed values', async () => {
+    ollamaService.extract.mockResolvedValue({
+      mood: 'INVALID_MOOD',
+      presentCharacters: [],
+      newEvents: []
+    });
+
+    const state = await extractWorldState('test', 'test', {}, 1, THORNHAVEN_SETTINGS);
+    expect(state.mood).toBeUndefined();
+  });
+
+  it('returns base state when extraction model is not ready', async () => {
+    const { default: manager } = await import('../../services/extractionModelManager.js');
+    const origReady = manager.isReady;
+    manager.isReady = () => false;
+
+    const state = await extractWorldState('test', 'test', { mood: 'Calm' }, 1, THORNHAVEN_SETTINGS);
+    expect(state.lastUpdated).toBe(1);
+    expect(state.mood).toBe('Calm');
+
+    manager.isReady = origReady;
+  });
+
+  it('handles LLM error gracefully', async () => {
+    ollamaService.extract.mockRejectedValue(new Error('timeout'));
+
+    const state = await extractWorldState('test', 'test', {}, 1, THORNHAVEN_SETTINGS);
+    expect(state.lastUpdated).toBe(1);
+  });
+
+  it('caps knownCharacters at 20', async () => {
+    const knownCharacters = {};
+    for (let i = 0; i < 25; i++) {
+      knownCharacters[`char${i}`] = { firstSeen: i, lastSeen: i, lastLocation: '', disposition: 'neutral' };
+    }
+
+    ollamaService.extract.mockResolvedValue({
+      presentCharacters: ['New Character'],
+      newEvents: []
+    });
+
+    const state = await extractWorldState('test', 'test', { knownCharacters }, 30, THORNHAVEN_SETTINGS);
+    expect(Object.keys(state.knownCharacters).length).toBeLessThanOrEqual(21);
+  });
+
+  it('preserves debates from existing state', async () => {
+    ollamaService.extract.mockResolvedValue({
+      presentCharacters: [],
+      newEvents: []
+    });
+
+    const existing = {
+      debates: [{ topic: 'trust', participants: ['Julian', 'Aria'] }],
+      knownCharacters: {}
+    };
+
+    const state = await extractWorldState('test', 'test', existing, 1, THORNHAVEN_SETTINGS);
+    expect(state.debates).toEqual(existing.debates);
+  });
+
+  it('extracts discoveries from LLM response', async () => {
+    ollamaService.extract.mockResolvedValue({
+      presentCharacters: ['Julian Ashworth'],
+      newEvents: [],
+      newDiscoveries: ['The signal was first detected two weeks ago', 'Over 200 unique sequences received']
+    });
+
+    const state = await extractWorldState('test', 'test', { knownCharacters: {} }, 1, THORNHAVEN_SETTINGS);
+    expect(state.discoveries.length).toBe(2);
+    expect(state.discoveries[0].text).toContain('signal');
+    expect(state.discoveries[0].state).toBe('active');
+  });
+
+  it('handles departedCharacters — removes them from present', async () => {
+    ollamaService.extract.mockResolvedValue({
+      presentCharacters: ['Aria'],
+      departedCharacters: ['Julian Ashworth'],
+      newEvents: []
+    });
+
+    const existing = {
+      presentCharacters: ['Julian Ashworth', 'Aria'],
+      knownCharacters: {
+        'julian ashworth': { firstSeen: 1, lastSeen: 1, lastLocation: '', disposition: 'neutral' }
+      }
+    };
+
+    const state = await extractWorldState('I go alone.', 'Julian stays behind.', existing, 2, THORNHAVEN_SETTINGS);
+    expect(state.presentCharacters).toContain('Aria');
+    expect(state.presentCharacters).not.toContain('Julian Ashworth');
+  });
+
+  it('ages discoveries slower than events', async () => {
+    ollamaService.extract.mockResolvedValue({
+      presentCharacters: [],
+      newEvents: [],
+      newDiscoveries: []
+    });
+
+    const existing = {
+      ongoingEvents: [{ text: 'An event', firstDetected: 1, lastConfirmed: 1, state: 'active' }],
+      discoveries: [{ text: 'A discovery', firstDetected: 1, lastConfirmed: 1, state: 'active' }],
+      knownCharacters: {}
+    };
+
+    // At turn 12: event age = 11 (> 10 → fading), discovery age = 11 (< 15 → still active)
+    const state = await extractWorldState('test', 'test', existing, 12, THORNHAVEN_SETTINGS);
+    expect(state.ongoingEvents[0].state).toBe('fading');
+    expect(state.discoveries[0].state).toBe('active');
   });
 });
 
+// ========================================================================
+// Multi-turn extraction tests (roleplay)
+// ========================================================================
+
+describe('extractWorldState — multi-turn incremental extraction', () => {
+  // Simulate a multi-turn roleplay conversation where state builds up
+  const TURNS = [
+    {
+      user: 'I enter the grand library cautiously.',
+      assistant: 'Julian Ashworth floats into view, his spectral form shimmering. "Welcome to Thornhaven," he says.',
+      llmResponse: {
+        currentLocation: 'the grand library',
+        currentTime: 'evening',
+        presentCharacters: ['Julian Ashworth', 'Aria'],
+        newEvents: ['Aria entered the grand library'],
+        mood: 'mysterious'
+      }
+    },
+    {
+      user: 'I reach for one of the old books on the shelf.',
+      assistant: 'The book snaps shut and flies to the top shelf. Julian chuckles. "The library has a mind of its own."',
+      llmResponse: {
+        currentLocation: null,
+        currentTime: null,
+        presentCharacters: ['Julian Ashworth', 'Aria'],
+        newEvents: ['A book flew to the top shelf on its own'],
+        mood: 'playful'
+      }
+    },
+    {
+      user: 'I follow Julian through the corridor to the study.',
+      assistant: 'The study is dimly lit with a fire crackling. Marguerite Delacroix sits by the window, reading.',
+      llmResponse: {
+        currentLocation: 'the study',
+        currentTime: null,
+        presentCharacters: ['Julian Ashworth', 'Aria', 'Marguerite Delacroix'],
+        newEvents: ['Marguerite Delacroix was found reading in the study'],
+        mood: 'calm'
+      }
+    },
+    {
+      user: 'I ask Marguerite about the house.',
+      assistant: 'Marguerite looks up. "This house devours the unwary." A loud crash echoes from below.',
+      llmResponse: {
+        currentLocation: null,
+        currentTime: null,
+        presentCharacters: ['Julian Ashworth', 'Aria', 'Marguerite Delacroix'],
+        newEvents: ['A loud crash echoed from below the study'],
+        mood: 'tense'
+      }
+    },
+    {
+      user: 'I rush to the basement to investigate the crash.',
+      assistant: 'You descend the stairs alone. The basement is cold and dark. Julian and Marguerite remain upstairs.',
+      llmResponse: {
+        currentLocation: 'the basement',
+        currentTime: null,
+        presentCharacters: ['Aria'],
+        newEvents: ['Aria descended to the basement alone'],
+        mood: 'eerie'
+      }
+    }
+  ];
+
+  it('builds state incrementally across 5 turns', async () => {
+    let state = {};
+    const snapshots = [];
+
+    for (let i = 0; i < TURNS.length; i++) {
+      ollamaService.extract.mockResolvedValueOnce(TURNS[i].llmResponse);
+      state = await extractWorldState(TURNS[i].user, TURNS[i].assistant, state, i + 1, THORNHAVEN_SETTINGS);
+      snapshots.push({ ...state });
+    }
+
+    // Called once per turn
+    expect(ollamaService.extract).toHaveBeenCalledTimes(5);
+
+    // Final state reflects turn 5
+    expect(state.lastUpdated).toBe(5);
+
+    // Location should be basement (last move)
+    expect(state.currentLocation).toBe('the basement');
+
+    // Location trail should have prior locations
+    expect(state.locationTrail.length).toBeGreaterThanOrEqual(2);
+    const trailLocations = state.locationTrail.map(l => l.location);
+    expect(trailLocations).toContain('the grand library');
+    expect(trailLocations).toContain('the study');
+
+    // Known characters should include all three + Aria
+    const knownKeys = Object.keys(state.knownCharacters).map(k => k.toLowerCase());
+    expect(knownKeys).toContain('julian ashworth');
+    expect(knownKeys).toContain('aria');
+    expect(knownKeys).toContain('marguerite delacroix');
+
+    // Events should have accumulated (at least the recent ones)
+    expect(state.ongoingEvents.length).toBeGreaterThan(0);
+
+    // Mood should be last extracted mood
+    expect(state.mood).toBe('Eerie');
+  });
+
+  it('accumulates more data over time — final state is richer than initial', async () => {
+    let state = {};
+    const snapshots = [];
+
+    for (let i = 0; i < TURNS.length; i++) {
+      ollamaService.extract.mockResolvedValueOnce(TURNS[i].llmResponse);
+      state = await extractWorldState(TURNS[i].user, TURNS[i].assistant, state, i + 1, THORNHAVEN_SETTINGS);
+      snapshots.push(JSON.stringify(state));
+    }
+
+    expect(snapshots[4].length).toBeGreaterThan(snapshots[0].length);
+  });
+
+  it('characters depart when no longer mentioned', async () => {
+    let state = {};
+
+    // Turn 1: Julian + Aria present
+    ollamaService.extract.mockResolvedValueOnce({
+      currentLocation: 'the library',
+      presentCharacters: ['Julian Ashworth', 'Aria'],
+      newEvents: [],
+    });
+    state = await extractWorldState('Hello.', 'Welcome.', state, 1, THORNHAVEN_SETTINGS);
+    expect(state.presentCharacters).toContain('Julian Ashworth');
+    expect(state.presentCharacters).toContain('Aria');
+
+    // Turn 2: Only Aria mentioned — Julian departed
+    ollamaService.extract.mockResolvedValueOnce({
+      presentCharacters: ['Aria'],
+      newEvents: [],
+    });
+    state = await extractWorldState('I go alone.', 'You walk on.', state, 2, THORNHAVEN_SETTINGS);
+    expect(state.presentCharacters).toContain('Aria');
+    expect(state.presentCharacters).not.toContain('Julian Ashworth');
+  });
+
+  it('generates diff history across turns', async () => {
+    let state = {};
+    const allChanges = [];
+
+    for (let i = 0; i < TURNS.length; i++) {
+      const oldState = { ...state };
+      ollamaService.extract.mockResolvedValueOnce(TURNS[i].llmResponse);
+      state = await extractWorldState(TURNS[i].user, TURNS[i].assistant, state, i + 1, THORNHAVEN_SETTINGS);
+
+      const changes = diffWorldState(oldState, state, i + 1);
+      allChanges.push(...changes);
+    }
+
+    // Should detect location changes, character arrivals, mood changes, etc.
+    expect(allChanges.length).toBeGreaterThan(0);
+    const fields = allChanges.map(c => c.field);
+    expect(fields).toContain('currentLocation');
+    expect(fields).toContain('mood');
+  });
+});
+
+// ========================================================================
+// Re-extraction tests (full replay)
+// ========================================================================
+
+describe('extractWorldState — full re-extraction (replay all turns)', () => {
+  // Simulates the reextract-state endpoint: replay ALL message pairs from scratch
+  const FULL_DIALOGUE = [
+    { user: 'I step into the courtyard.', assistant: 'Julian appears beside the fountain.' },
+    { user: 'We walk to the east wing.', assistant: 'Cass Holloway is waiting at the door of the east wing.' },
+    { user: 'Cass leads us inside the gallery.', assistant: 'Paintings line the walls. The mood is somber.' },
+    { user: 'I notice a hidden door behind one of the paintings.', assistant: 'Julian examines it. "This wasn\'t here before," he says.' },
+    { user: 'We open the hidden door and go through.', assistant: 'A narrow tunnel leads down to a crypt.' },
+    { user: 'I investigate the crypt alone.', assistant: 'Cass and Julian stay behind. You find an old journal.' },
+  ];
+
+  const LLM_RESPONSES = [
+    { currentLocation: 'the courtyard', presentCharacters: ['Julian Ashworth', 'Aria'], newEvents: ['Aria entered the courtyard'], mood: 'calm' },
+    { currentLocation: 'the east wing', presentCharacters: ['Julian Ashworth', 'Aria', 'Cass Holloway'], newEvents: ['Cass Holloway was waiting at the east wing'], mood: null },
+    { currentLocation: 'the gallery', presentCharacters: ['Julian Ashworth', 'Aria', 'Cass Holloway'], newEvents: [], mood: 'somber' },
+    { currentLocation: null, presentCharacters: ['Julian Ashworth', 'Aria', 'Cass Holloway'], newEvents: ['A hidden door was discovered behind a painting'], mood: 'mysterious' },
+    { currentLocation: 'the crypt', presentCharacters: ['Julian Ashworth', 'Aria', 'Cass Holloway'], newEvents: ['The group passed through a hidden tunnel'], mood: 'eerie' },
+    { currentLocation: null, presentCharacters: ['Aria'], newEvents: ['Aria found an old journal in the crypt'], mood: null },
+  ];
+
+  async function reextractAllTurns(messages, llmResponses, settings) {
+    let state = {};
+    const history = [];
+
+    for (let i = 0; i < messages.length; i++) {
+      const oldState = { ...state };
+      ollamaService.extract.mockResolvedValueOnce(llmResponses[i]);
+      state = await extractWorldState(messages[i].user, messages[i].assistant, state, i + 1, settings);
+
+      const changes = diffWorldState(oldState, state, i + 1);
+      if (state._resolvedEvents?.length > 0) {
+        for (const event of state._resolvedEvents) {
+          changes.push({ turn: i + 1, field: 'ongoingEvents', from: event.text, action: 'resolved' });
+        }
+      }
+      delete state._resolvedEvents;
+      history.push(...changes);
+    }
+
+    return { finalState: state, history };
+  }
+
+  it('processes ALL message pairs, not just the last one', async () => {
+    const { finalState } = await reextractAllTurns(FULL_DIALOGUE, LLM_RESPONSES, THORNHAVEN_SETTINGS);
+
+    // Should have called extract once per turn (6 turns)
+    expect(ollamaService.extract).toHaveBeenCalledTimes(6);
+
+    // Each call should have received the user and assistant messages from that turn
+    for (let i = 0; i < FULL_DIALOGUE.length; i++) {
+      const callArgs = ollamaService.extract.mock.calls[i];
+      const prompt = callArgs[1]; // second arg is the prompt string
+      expect(prompt).toContain(FULL_DIALOGUE[i].user);
+      expect(prompt).toContain(FULL_DIALOGUE[i].assistant);
+    }
+  });
+
+  it('re-extraction produces complete location trail', async () => {
+    const { finalState } = await reextractAllTurns(FULL_DIALOGUE, LLM_RESPONSES, THORNHAVEN_SETTINGS);
+
+    // Should have tracked the journey: courtyard → east wing → gallery → crypt
+    const trailLocations = (finalState.locationTrail || []).map(l => l.location);
+
+    expect(trailLocations).toContain('the courtyard');
+    expect(trailLocations).toContain('the east wing');
+    expect(trailLocations).toContain('the gallery');
+    // crypt is the current location, not in trail
+    expect(finalState.currentLocation).toBe('the crypt');
+  });
+
+  it('re-extraction discovers all characters from full history', async () => {
+    const { finalState } = await reextractAllTurns(FULL_DIALOGUE, LLM_RESPONSES, THORNHAVEN_SETTINGS);
+
+    const knownKeys = Object.keys(finalState.knownCharacters).map(k => k.toLowerCase());
+    expect(knownKeys).toContain('julian ashworth');
+    expect(knownKeys).toContain('aria');
+    expect(knownKeys).toContain('cass holloway');
+  });
+
+  it('re-extraction generates complete diff history', async () => {
+    const { history } = await reextractAllTurns(FULL_DIALOGUE, LLM_RESPONSES, THORNHAVEN_SETTINGS);
+
+    expect(history.length).toBeGreaterThan(0);
+
+    // Should have changes from multiple turns
+    const turns = [...new Set(history.map(h => h.turn))];
+    expect(turns.length).toBeGreaterThan(1);
+
+    // Should track location changes
+    const locationChanges = history.filter(h => h.field === 'currentLocation');
+    expect(locationChanges.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('re-extraction accumulates events across all turns', async () => {
+    const { finalState } = await reextractAllTurns(FULL_DIALOGUE, LLM_RESPONSES, THORNHAVEN_SETTINGS);
+
+    // Should have multiple events from across the dialogue
+    expect(finalState.ongoingEvents.length).toBeGreaterThan(1);
+
+    // Events should have lifecycle fields
+    for (const event of finalState.ongoingEvents) {
+      expect(event).toHaveProperty('text');
+      expect(event).toHaveProperty('firstDetected');
+      expect(event).toHaveProperty('lastConfirmed');
+      expect(event).toHaveProperty('state');
+    }
+  });
+
+  it('re-extraction produces same result when run twice on same data', async () => {
+    const result1 = await reextractAllTurns(FULL_DIALOGUE, LLM_RESPONSES, THORNHAVEN_SETTINGS);
+
+    // Reset mock call count and re-run
+    vi.clearAllMocks();
+    const result2 = await reextractAllTurns(FULL_DIALOGUE, LLM_RESPONSES, THORNHAVEN_SETTINGS);
+
+    // Same final state
+    expect(result1.finalState.currentLocation).toBe(result2.finalState.currentLocation);
+    expect(result1.finalState.mood).toBe(result2.finalState.mood);
+    expect(Object.keys(result1.finalState.knownCharacters).sort())
+      .toEqual(Object.keys(result2.finalState.knownCharacters).sort());
+    expect(result1.history.length).toBe(result2.history.length);
+  });
+
+  it('re-extraction handles empty message list', async () => {
+    const { finalState, history } = await reextractAllTurns([], [], THORNHAVEN_SETTINGS);
+
+    expect(finalState).toEqual({});
+    expect(history).toEqual([]);
+    expect(ollamaService.extract).not.toHaveBeenCalled();
+  });
+
+  it('re-extraction handles single turn', async () => {
+    const { finalState } = await reextractAllTurns(
+      [FULL_DIALOGUE[0]],
+      [LLM_RESPONSES[0]],
+      THORNHAVEN_SETTINGS
+    );
+
+    expect(ollamaService.extract).toHaveBeenCalledTimes(1);
+    expect(finalState.currentLocation).toBe('the courtyard');
+    expect(finalState.lastUpdated).toBe(1);
+  });
+});
+
+// ========================================================================
+// Re-extraction for utility/session state
+// ========================================================================
+
+describe('extractSessionState — full re-extraction (utility mode)', () => {
+  const UTILITY_DIALOGUE = [
+    { user: 'Should we use SQLite or PostgreSQL?', assistant: 'For a local app, SQLite with WAL mode is ideal.' },
+    { user: "Let's go with SQLite then.", assistant: 'Good choice. I\'ll set up the schema.' },
+    { user: 'What about caching? Should we add Redis?', assistant: 'Redis adds complexity. Let\'s table that for now.' },
+    { user: 'How do we handle authentication?', assistant: 'JWT tokens are the standard approach for APIs.' },
+    { user: "Let's use JWT for auth. Also park the Redis discussion.", assistant: 'Agreed. JWT for auth, Redis parked for later.' },
+  ];
+
+  const UTILITY_LLM_RESPONSES = [
+    { currentFocus: 'Database Selection', newQuestions: ['Should we use SQLite or PostgreSQL?'], newDecisions: [], newParkedItems: [], newEntities: ['SQLite', 'PostgreSQL'] },
+    { currentFocus: 'Database Setup', newQuestions: [], newDecisions: ['Use SQLite with WAL mode'], newParkedItems: [], newEntities: ['SQLite'] },
+    { currentFocus: 'Caching Strategy', newQuestions: ['Should we add Redis?'], newDecisions: [], newParkedItems: [], newEntities: ['Redis'] },
+    { currentFocus: 'Authentication', newQuestions: ['How do we handle authentication?'], newDecisions: [], newParkedItems: [], newEntities: ['JWT'] },
+    { currentFocus: 'Authentication', newQuestions: [], newDecisions: ['Use JWT for auth'], newParkedItems: ['Redis discussion'], newEntities: ['JWT'] },
+  ];
+
+  async function reextractSessionTurns(messages, llmResponses) {
+    let state = {};
+    const history = [];
+
+    for (let i = 0; i < messages.length; i++) {
+      const oldState = { ...state };
+      ollamaService.extract.mockResolvedValueOnce(llmResponses[i]);
+      state = await extractSessionState(messages[i].user, messages[i].assistant, state, i + 1);
+
+      const changes = diffWorldState(oldState, state, i + 1);
+      if (state._resolvedEvents?.length > 0) {
+        for (const event of state._resolvedEvents) {
+          changes.push({ turn: i + 1, field: 'openQuestions', from: event.text, action: 'resolved' });
+        }
+      }
+      delete state._resolvedEvents;
+      history.push(...changes);
+    }
+
+    return { finalState: state, history };
+  }
+
+  it('processes ALL turns and accumulates state', async () => {
+    const { finalState } = await reextractSessionTurns(UTILITY_DIALOGUE, UTILITY_LLM_RESPONSES);
+
+    expect(ollamaService.extract).toHaveBeenCalledTimes(5);
+    expect(finalState.lastUpdated).toBe(5);
+    expect(finalState.currentFocus).toBe('Authentication');
+  });
+
+  it('accumulates entities across turns', async () => {
+    const { finalState } = await reextractSessionTurns(UTILITY_DIALOGUE, UTILITY_LLM_RESPONSES);
+
+    const entityKeys = Object.keys(finalState.knownEntities).map(k => k.toLowerCase());
+    expect(entityKeys).toContain('sqlite');
+    expect(entityKeys).toContain('postgresql');
+    expect(entityKeys).toContain('redis');
+    expect(entityKeys).toContain('jwt');
+  });
+
+  it('tracks decisions from across the conversation', async () => {
+    const { finalState } = await reextractSessionTurns(UTILITY_DIALOGUE, UTILITY_LLM_RESPONSES);
+
+    expect(finalState.decisions.length).toBeGreaterThanOrEqual(2);
+    const decisionTexts = finalState.decisions.map(d => d.text);
+    expect(decisionTexts.some(t => t.includes('SQLite'))).toBe(true);
+    expect(decisionTexts.some(t => t.includes('JWT'))).toBe(true);
+  });
+
+  it('tracks parked items', async () => {
+    const { finalState } = await reextractSessionTurns(UTILITY_DIALOGUE, UTILITY_LLM_RESPONSES);
+
+    expect(finalState.parkedItems.length).toBeGreaterThanOrEqual(1);
+    expect(finalState.parkedItems.some(p => p.text.includes('Redis'))).toBe(true);
+  });
+
+  it('generates history entries from all turns', async () => {
+    const { history } = await reextractSessionTurns(UTILITY_DIALOGUE, UTILITY_LLM_RESPONSES);
+
+    expect(history.length).toBeGreaterThan(0);
+    const turns = [...new Set(history.map(h => h.turn))];
+    expect(turns.length).toBeGreaterThan(1);
+  });
+
+  it('each call receives the correct turn text', async () => {
+    await reextractSessionTurns(UTILITY_DIALOGUE, UTILITY_LLM_RESPONSES);
+
+    for (let i = 0; i < UTILITY_DIALOGUE.length; i++) {
+      const prompt = ollamaService.extract.mock.calls[i][1];
+      expect(prompt).toContain(UTILITY_DIALOGUE[i].user);
+      expect(prompt).toContain(UTILITY_DIALOGUE[i].assistant);
+    }
+  });
+});
+
+// ========================================================================
+// Performance / timing tests
+// ========================================================================
+
+describe('extraction performance', () => {
+  it('single roleplay turn extraction completes quickly with mocked LLM', async () => {
+    ollamaService.extract.mockResolvedValue({
+      currentLocation: 'the library',
+      presentCharacters: ['Julian'],
+      newEvents: ['Something happened'],
+      mood: 'calm'
+    });
+
+    const start = performance.now();
+    await extractWorldState('test', 'test', {}, 1, THORNHAVEN_SETTINGS);
+    const elapsed = performance.now() - start;
+
+    // With mocked LLM, pure JS logic should be < 50ms
+    expect(elapsed).toBeLessThan(50);
+  });
+
+  it('single session state extraction completes quickly with mocked LLM', async () => {
+    ollamaService.extract.mockResolvedValue({
+      currentFocus: 'Testing',
+      newQuestions: ['Is it fast?'],
+      newDecisions: ['Yes it is'],
+      newParkedItems: [],
+      newEntities: ['Vitest']
+    });
+
+    const start = performance.now();
+    await extractSessionState('test', 'test', {}, 1);
+    const elapsed = performance.now() - start;
+
+    expect(elapsed).toBeLessThan(50);
+  });
+
+  it('20-turn re-extraction completes quickly with mocked LLM', async () => {
+    const turns = 20;
+
+    for (let i = 0; i < turns; i++) {
+      ollamaService.extract.mockResolvedValueOnce({
+        currentLocation: i % 3 === 0 ? `room-${i}` : null,
+        presentCharacters: ['Julian', 'Aria'],
+        newEvents: i % 2 === 0 ? [`Event at turn ${i}`] : [],
+        mood: i % 4 === 0 ? 'calm' : null
+      });
+    }
+
+    const start = performance.now();
+    let state = {};
+    for (let i = 0; i < turns; i++) {
+      state = await extractWorldState(`msg ${i}`, `reply ${i}`, state, i + 1, THORNHAVEN_SETTINGS);
+    }
+    const elapsed = performance.now() - start;
+
+    // 20 turns of pure JS lifecycle logic should finish well under 200ms
+    expect(elapsed).toBeLessThan(200);
+    expect(state.lastUpdated).toBe(20);
+    expect(ollamaService.extract).toHaveBeenCalledTimes(20);
+  });
+
+  it('extraction with heavy existing state does not degrade significantly', async () => {
+    // Build a large existing state
+    const knownCharacters = {};
+    for (let i = 0; i < 20; i++) {
+      knownCharacters[`char${i}`] = { firstSeen: i, lastSeen: i + 5, lastLocation: `room-${i}`, disposition: 'neutral' };
+    }
+    const ongoingEvents = [];
+    for (let i = 0; i < 8; i++) {
+      ongoingEvents.push({ text: `Ongoing event number ${i} with details`, firstDetected: i, lastConfirmed: i + 2, state: 'active' });
+    }
+    const locationTrail = [];
+    for (let i = 0; i < 10; i++) {
+      locationTrail.push({ location: `location-${i}`, arrivedTurn: i, departedTurn: i + 1 });
+    }
+
+    const heavyState = {
+      currentLocation: 'the throne room',
+      locationTrail,
+      locationArrivedTurn: 10,
+      currentTime: 'midnight',
+      presentCharacters: ['Julian', 'Aria', 'Cass', 'Marguerite'],
+      knownCharacters,
+      ongoingEvents,
+      mood: 'Tense',
+      debates: [{ topic: 'trust' }, { topic: 'escape' }]
+    };
+
+    ollamaService.extract.mockResolvedValue({
+      currentLocation: 'the dungeon',
+      presentCharacters: ['Aria'],
+      newEvents: ['Aria fell through a trap door'],
+      mood: 'eerie'
+    });
+
+    const start = performance.now();
+    const state = await extractWorldState('I fall!', 'You plunge into darkness.', heavyState, 50, THORNHAVEN_SETTINGS);
+    const elapsed = performance.now() - start;
+
+    expect(elapsed).toBeLessThan(50);
+    expect(state.currentLocation).toBe('the dungeon');
+    // The heavy existing state should be preserved/merged
+    expect(state.locationTrail.length).toBeGreaterThanOrEqual(10);
+    expect(state.debates.length).toBe(2);
+  });
+});
+
+// ========================================================================
+// Prompt content verification
+// ========================================================================
+
+describe('extraction prompt content', () => {
+  it('roleplay prompt includes character names from settings', async () => {
+    ollamaService.extract.mockResolvedValue({ presentCharacters: [], newEvents: [] });
+
+    await extractWorldState('test', 'test', {}, 1, THORNHAVEN_SETTINGS);
+
+    const prompt = ollamaService.extract.mock.calls[0][1];
+    expect(prompt).toContain('Julian Ashworth');
+    expect(prompt).toContain('Marguerite Delacroix');
+    expect(prompt).toContain('Cass Holloway');
+    expect(prompt).toContain('Aria');
+  });
+
+  it('roleplay prompt includes current state context', async () => {
+    ollamaService.extract.mockResolvedValue({ presentCharacters: [], newEvents: [] });
+
+    const existing = { currentLocation: 'the library', mood: 'Mysterious' };
+    await extractWorldState('test', 'test', existing, 2, THORNHAVEN_SETTINGS);
+
+    const prompt = ollamaService.extract.mock.calls[0][1];
+    expect(prompt).toContain('the library');
+  });
+
+  it('session state prompt includes current state context', async () => {
+    ollamaService.extract.mockResolvedValue({ newQuestions: [], newDecisions: [], newParkedItems: [], newEntities: [] });
+
+    const existing = { currentFocus: 'Database Migration' };
+    await extractSessionState('test', 'test', existing, 2);
+
+    const prompt = ollamaService.extract.mock.calls[0][1];
+    expect(prompt).toContain('Database Migration');
+  });
+
+  it('uses correct model name for extraction', async () => {
+    ollamaService.extract.mockResolvedValue({ presentCharacters: [], newEvents: [] });
+
+    await extractWorldState('test', 'test', {}, 1, THORNHAVEN_SETTINGS);
+
+    expect(ollamaService.extract.mock.calls[0][0]).toBe('phi4-mini');
+  });
+});
+
+// ========================================================================
+// Original diffWorldState and matchEvent tests
+// ========================================================================
+
 describe('diffWorldState', () => {
-  it('detects changes between two different states', () => {
+  it('detects scalar changes', () => {
     const old = { currentLocation: 'the tavern', mood: 'Calm' };
     const next = { currentLocation: 'the forest', mood: 'Tense' };
     const changes = diffWorldState(old, next, 5);
-    expect(changes.length).toBeGreaterThan(0);
+    expect(changes.length).toBe(2);
     expect(changes.every(c => c.turn === 5)).toBe(true);
-    expect(changes.every(c => typeof c.field === 'string')).toBe(true);
   });
 
   it('detects array element additions', () => {
@@ -228,7 +791,15 @@ describe('diffWorldState', () => {
     const next = { presentCharacters: ['Julian', 'Cass'] };
     const changes = diffWorldState(old, next, 3);
     expect(changes.length).toBe(1);
-    expect(changes[0].action).toBeTruthy();
+    expect(changes[0].action).toBe('arrived');
+  });
+
+  it('detects array element removals', () => {
+    const old = { presentCharacters: ['Julian', 'Cass'] };
+    const next = { presentCharacters: ['Julian'] };
+    const changes = diffWorldState(old, next, 4);
+    expect(changes.length).toBe(1);
+    expect(changes[0].action).toBe('departed');
   });
 
   it('returns empty for identical states', () => {
@@ -241,11 +812,12 @@ describe('diffWorldState', () => {
     expect(diffWorldState({}, null, 1)).toEqual([]);
   });
 
-  it('works for utility mode fields too', () => {
+  it('works for utility mode fields', () => {
     const old = { currentFocus: 'Database' };
     const next = { currentFocus: 'Authentication' };
     const changes = diffWorldState(old, next, 2);
     expect(changes.length).toBe(1);
+    expect(changes[0].field).toBe('currentFocus');
   });
 });
 
@@ -272,70 +844,5 @@ describe('matchEvent', () => {
 
   it('returns -1 for empty events list', () => {
     expect(matchEvent('anything', [])).toBe(-1);
-  });
-});
-
-describe('extractSessionState — utility mode', () => {
-  it('produces structured output from a technical discussion', () => {
-    let state = {};
-    state = extractSessionState(
-      'Should we use SQLite or PostgreSQL for the database? How do we handle concurrent writes?',
-      'SQLite with WAL mode handles concurrent reads well. For heavy concurrent writes, PostgreSQL is better. Let\'s go with SQLite for now since we\'re building a local app.',
-      state, 1
-    );
-
-    expect(state.lastUpdated).toBe(1);
-    // Should extract something meaningful — we don't dictate what
-    const hasContent = state.currentFocus ||
-      (state.openQuestions?.length > 0) ||
-      (state.decisions?.length > 0);
-    expect(hasContent).toBeTruthy();
-  });
-
-  it('tracks state across multiple turns', () => {
-    let state = {};
-    state = extractSessionState(
-      'We need to figure out the authentication strategy.',
-      'There are several options: JWT tokens, session cookies, or OAuth.',
-      state, 1
-    );
-    state = extractSessionState(
-      'What about rate limiting? How should we handle that?',
-      'Express-rate-limit is the standard choice. We should add it to all API endpoints.',
-      state, 2
-    );
-    state = extractSessionState(
-      "Let's go with JWT for auth and express-rate-limit for throttling.",
-      'Good choices. I\'ll set up the middleware.',
-      state, 3
-    );
-
-    // After 3 turns, state should have grown
-    expect(state.lastUpdated).toBe(3);
-    const totalItems = (state.openQuestions?.length || 0) +
-      (state.decisions?.length || 0) +
-      Object.keys(state.knownEntities || {}).length;
-    expect(totalItems).toBeGreaterThan(0);
-  });
-
-  it('promotes entities seen in multiple turns', () => {
-    let state = {};
-    state = extractSessionState(
-      'We should look at LangChain for the RAG pipeline.',
-      'LangChain provides good abstractions for retrieval.',
-      state, 1
-    );
-    state = extractSessionState(
-      'How does LangChain handle streaming responses?',
-      'LangChain supports streaming via async callbacks.',
-      state, 2
-    );
-
-    const entities = state.knownEntities || {};
-    const multiTurnEntities = Object.entries(entities).filter(
-      ([, data]) => data.lastSeen > data.firstSeen
-    );
-    // At least one entity should have been seen across multiple turns
-    expect(multiTurnEntities.length).toBeGreaterThan(0);
   });
 });

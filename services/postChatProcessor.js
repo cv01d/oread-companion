@@ -11,6 +11,7 @@ import { extractWorldState, extractSessionState, diffWorldState } from './worldS
 import { extractStances } from './stanceExtractor.js';
 import { shouldExtractDebates, extractDebates } from './debateExtractor.js';
 import { promoteToGlobalMemory, updateRelationship } from './globalMemory.js';
+import extractionModelManager from './extractionModelManager.js';
 
 /**
  * Run all post-chat processing for a session turn.
@@ -32,23 +33,25 @@ export async function processPostChat({ sessionId, userContent, assistantRespons
   const turn = Math.floor(msgCount / 2);
   const mode = settings?.mode || 'normal';
 
-  // 1. Fact extraction (zero-inference, synchronous, both modes)
-  try {
-    const newFacts = extractFacts(userContent, assistantResponse, turn);
-    if (newFacts.length > 0) {
-      const factSession = await database.get(
-        `SELECT extracted_facts FROM sessions WHERE id = ?`,
-        [sessionId]
-      );
-      const existing = JSON.parse(factSession?.extracted_facts || '[]');
-      const merged = deduplicateAndCap(existing, newFacts);
-      await database.run(
-        `UPDATE sessions SET extracted_facts = ? WHERE id = ?`,
-        [JSON.stringify(merged), sessionId]
-      );
+  // 1. Fact extraction (phi4-mini, async, both modes)
+  if (extractionModelManager.isReady()) {
+    try {
+      const newFacts = await extractFacts(userContent, assistantResponse, turn);
+      if (newFacts.length > 0) {
+        const factSession = await database.get(
+          `SELECT extracted_facts FROM sessions WHERE id = ?`,
+          [sessionId]
+        );
+        const existing = JSON.parse(factSession?.extracted_facts || '[]');
+        const merged = deduplicateAndCap(existing, newFacts);
+        await database.run(
+          `UPDATE sessions SET extracted_facts = ? WHERE id = ?`,
+          [JSON.stringify(merged), sessionId]
+        );
+      }
+    } catch (err) {
+      console.error('Fact extraction error:', err);
     }
-  } catch (err) {
-    console.error('Fact extraction error:', err);
   }
 
   // 2. Summarization (background, non-blocking, both modes)
@@ -86,7 +89,8 @@ export async function processPostChat({ sessionId, userContent, assistantRespons
     }
   }
 
-  // 3. State extraction (both modes, zero-inference)
+  // 3. State extraction (both modes, phi4-mini async)
+  if (extractionModelManager.isReady()) {
   try {
     const wsSession = await database.get(
       `SELECT world_state, world_state_history FROM sessions WHERE id = ?`,
@@ -96,8 +100,8 @@ export async function processPostChat({ sessionId, userContent, assistantRespons
 
     // Dispatch to mode-specific extractor
     const updatedState = mode === 'roleplay'
-      ? extractWorldState(userContent, assistantResponse, currentState, turn, settings)
-      : extractSessionState(userContent, assistantResponse, currentState, turn);
+      ? await extractWorldState(userContent, assistantResponse, currentState, turn, settings)
+      : await extractSessionState(userContent, assistantResponse, currentState, turn);
 
     // Diff and log state history (works for both modes via config-driven fields)
     const changes = diffWorldState(currentState, updatedState, turn);
@@ -135,6 +139,7 @@ export async function processPostChat({ sessionId, userContent, assistantRespons
   } catch (err) {
     console.error('State extraction error:', err);
   }
+  } // end extraction model ready check
 
   // 4. Character stance extraction (roleplay mode only, zero-inference)
   if (mode === 'roleplay') {

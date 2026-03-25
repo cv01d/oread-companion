@@ -15,6 +15,7 @@ export default function WorldStatePanel() {
   const [collapsed, setCollapsed] = useState(true);
   const [showHistory, setShowHistory] = useState(false);
   const [reextracting, setReextracting] = useState(false);
+  const [reextractError, setReextractError] = useState(null);
 
   const isRoleplay = mode === 'roleplay';
 
@@ -22,10 +23,12 @@ export default function WorldStatePanel() {
     isRoleplay
       ? (worldState.currentTime || worldState.currentLocation ||
          worldState.presentCharacters?.length > 0 || worldState.ongoingEvents?.length > 0 ||
+         worldState.discoveries?.length > 0 ||
          worldState.mood || (worldState.knownCharacters && Object.keys(worldState.knownCharacters).length > 0) ||
          worldState.debates?.length > 0)
       : (worldState.currentFocus || worldState.openQuestions?.length > 0 ||
          worldState.decisions?.length > 0 || worldState.parkedItems?.length > 0 ||
+         worldState.discoveries?.length > 0 ||
          (worldState.knownEntities && Object.keys(worldState.knownEntities).length > 0) ||
          worldState.debates?.length > 0)
   );
@@ -366,9 +369,14 @@ export default function WorldStatePanel() {
             onClick={async () => {
               if (!currentSessionId || reextracting) return;
               setReextracting(true);
-              await reextractWorldState(currentSessionId);
+              setReextractError(null);
+              const result = await reextractWorldState(currentSessionId);
               setReextracting(false);
-              setCollapsed(false);
+              if (result?.success) {
+                setCollapsed(false);
+              } else {
+                setReextractError(result?.error || 'Re-extraction failed');
+              }
             }}
             title="Re-extract state from all messages"
             disabled={reextracting}
@@ -384,6 +392,9 @@ export default function WorldStatePanel() {
           </button>
         </div>
       </div>
+      {reextractError && (
+        <div className={styles.reextractError}>{reextractError}</div>
+      )}
       {!collapsed && hasState && (
         <div className={styles.fields}>
           {isRoleplay ? (
@@ -394,6 +405,7 @@ export default function WorldStatePanel() {
               {worldState.presentCharacters?.length > 0 && renderField('Present', 'presentCharacters', worldState.presentCharacters)}
               {worldState.mood && renderField('Atmosphere', 'mood', worldState.mood)}
               {renderLifecycleList('Events', 'ongoingEvents')}
+              {renderLifecycleList('Discoveries', 'discoveries')}
               {renderKnownCharacters()}
             </>
           ) : (
@@ -402,6 +414,7 @@ export default function WorldStatePanel() {
               {renderLifecycleList('Open', 'openQuestions')}
               {renderLifecycleList('Decided', 'decisions', 'decided')}
               {renderLifecycleList('Parked', 'parkedItems', 'parked')}
+              {renderLifecycleList('Insights', 'discoveries')}
               {renderKnownEntities()}
             </>
           )}

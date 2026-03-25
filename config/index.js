@@ -53,6 +53,7 @@ export const CONFIG = {
   // Ollama
   OLLAMA_URL: process.env.OLLAMA_URL || 'http://localhost:11434',
   OLLAMA_CHAT_MODEL: process.env.OLLAMA_CHAT_MODEL || 'llama2',
+  OLLAMA_EXTRACTION_MODEL: process.env.OLLAMA_EXTRACTION_MODEL || 'phi4-mini',
 
   // CORS
   ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS

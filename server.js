@@ -9,6 +9,7 @@ import { CONFIG, validateConfig } from './config/index.js';
 // Services
 import ollamaService from './services/ollama.js';
 import database from './services/database.js';
+import extractionModelManager from './services/extractionModelManager.js';
 import { initializeCharacters } from './controllers/characterController.js';
 import { selectMessages } from './services/contextWindow.js';
 import { processPostChat } from './services/postChatProcessor.js';
@@ -93,6 +94,11 @@ async function initializeServices() {
     // Initialize character system
     initializeCharacters();
 
+    // Initialize extraction model (phi4-mini) — downloads in background if missing
+    extractionModelManager.initialize().catch(err => {
+      console.error('Extraction model initialization error:', err.message);
+    });
+
     console.log('✅ All services initialized');
     console.log(`🔒 Security: Auth=${CONFIG.ENABLE_AUTH ? 'ENABLED' : 'DISABLED (dev mode)'}`);
     return true;
@@ -141,6 +147,9 @@ app.get('/api/health', asyncHandler(async (req, res) => {
     health.services.database = 'error';
     health.status = 'error';
   }
+
+  // Extraction model status
+  health.services.extractionModel = extractionModelManager.getStatus();
 
   const statusCode = health.status === 'ok' ? 200 : 503;
   res.status(statusCode).json(health);

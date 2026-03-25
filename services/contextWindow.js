@@ -101,6 +101,13 @@ function buildContextBlock(storyNotes, extractedFacts, rollingSummary, worldStat
         if (fading.length > 0) wsLines.push(`Fading: ${fading.join('; ')}`);
       }
 
+      if (worldState.discoveries?.length) {
+        const activeDisc = worldState.discoveries
+          .filter(d => typeof d === 'object' ? d.state !== 'resolved' : true)
+          .map(d => typeof d === 'string' ? d : d.text);
+        if (activeDisc.length > 0) wsLines.push(`Key discoveries: ${activeDisc.join('; ')}`);
+      }
+
       if (worldState.mood) wsLines.push(`Atmosphere: ${worldState.mood}`);
 
       if (wsLines.length > 0) {
@@ -145,6 +152,13 @@ function buildContextBlock(storyNotes, extractedFacts, rollingSummary, worldStat
           }
         }
         if (referenced.length > 0) ssLines.push(`Referenced: ${referenced.join(', ')}`);
+      }
+
+      if (worldState.discoveries?.length) {
+        const activeDisc = worldState.discoveries
+          .filter(d => typeof d === 'object' ? d.state !== 'resolved' : true)
+          .map(d => typeof d === 'string' ? d : d.text);
+        if (activeDisc.length > 0) ssLines.push(`Key insights: ${activeDisc.join('; ')}`);
       }
 
       if (ssLines.length > 0) {

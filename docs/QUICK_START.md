@@ -8,6 +8,14 @@ All components have been created and integrated. The comprehensive settings syst
 
 ## 🚀 Running the Application
 
+### Terminal 0 - Ollama (recommended flags for multi-model support)
+```bash
+OLLAMA_MAX_LOADED_MODELS=2 OLLAMA_NUM_PARALLEL=4 ollama serve
+```
+**Why:** The app uses a dedicated `phi4-mini` model for fact/state extraction alongside your chat model. These flags keep both models loaded in memory for fast extraction. Without them, Ollama may unload/reload models between turns.
+
+**Note:** If `phi4-mini` is not installed, the app will automatically download it on first startup.
+
 ### Terminal 1 - Backend
 ```bash
 cd /Users/fastandcurious/apps/chat

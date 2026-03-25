@@ -8,18 +8,19 @@ Full-stack local AI chat app with Ollama integration. Streaming chat, roleplay/c
 
 - **Backend**: Node.js (ES Modules), Express, SQLite (WAL mode, FTS5), SSE streaming
 - **Frontend**: React 19, Vite, Zustand (sliced stores), SCSS (`global.scss` + `*.module.scss`)
-- **AI**: Ollama (`ollama` npm package), `compromise` (rule-based NLP for fact/world/stance extraction)
+- **AI**: Ollama (`ollama` npm package), phi4-mini (LLM-based fact/world/session state extraction)
 - **Security**: Helmet, express-rate-limit, Joi validation, CSRF tokens, express-session
 
 ## Running
 
 ```bash
+OLLAMA_MAX_LOADED_MODELS=2 OLLAMA_NUM_PARALLEL=4 ollama serve  # Recommended: multi-model support
 npm run dev          # Backend :3001 (auto-reload)
 cd client && npm run dev  # Frontend :5173 (proxies /api/* → :3001)
 npm test             # Vitest + Supertest
 ```
 
-Ollama must be running: `ollama serve`
+Ollama must be running. The recommended launch command keeps both the chat model and the extraction model (phi4-mini) loaded in memory. If phi4-mini is not installed, it auto-downloads on first startup.
 
 ## Key Architecture
 
@@ -35,7 +36,7 @@ sendMessage() → build system prompt (promptBuilder.js) → load characters if 
   → load DB messages + context window selection (contextWindow.js)
   → detect recall triggers → FTS5 archive search if triggered
   → load global memory (if crossSessionMemory enabled)
-  → append context block (story notes + summary + facts + world/session state + stances + debates + global memory) to system prompt
+  → append context block (story notes + summary + facts + world/session state + discoveries + stances + debates + global memory) to system prompt
   → ollamaService.chat() → SSE stream → save to SQLite
   → postChatProcessor: fact extraction → summarization → state extraction (+ history diff) → stance extraction → debate extraction → global memory promotion
   → frontend reloads world/session state after stream ends (live panel update)
@@ -59,11 +60,17 @@ The store is split into domain-specific slices composed into a single flat store
 
 ### Memory System (Tiered)
 
-**Zero-inference tier** (rule-based NLP, every turn):
-- Fact extraction via `compromise` — people, places, events, facts
+**LLM extraction tier** (phi4-mini via Ollama, every turn):
+- Fact extraction via phi4-mini — people, places, events, facts (JSON output, max 5 per category)
 - Smart deduplication with turn-age awareness (`deduplicateAndCap`, 80 facts, 40-turn age)
-- World state extraction — location, time, present characters, events, mood, known characters registry, event lifecycle, location breadcrumbs (roleplay mode)
-- Session state extraction — focus topic, open questions, decisions, parked items, known entities (utility/normal mode)
+- World state extraction — location, time, present characters (physically in scene only), departed characters, events, discoveries, mood, known characters registry, event lifecycle, location breadcrumbs (roleplay mode)
+- Session state extraction — focus topic, open questions, decisions, parked items, known entities, discoveries/insights (utility/normal mode)
+- **Discoveries** — new field tracked in both modes. Key information, theories, revelations. Ages slower than events (15 turns → fading, 30 → resolved). Injected as `Key discoveries:` (roleplay) or `Key insights:` (utility)
+- Auto-download: phi4-mini is downloaded automatically on first startup if missing
+- Graceful degradation: if phi4-mini is not yet available, extraction is skipped (chat still works)
+- `ensureReady(timeoutMs)` — blocks and waits for download; used by re-extraction endpoint to avoid silent no-ops
+
+**Zero-inference tier** (regex-based, every turn):
 - Character stance extraction — opinion markers, dialectic style inference (roleplay only)
 
 **Inference tier** (Ollama, background):
@@ -90,10 +97,10 @@ The store is split into domain-specific slices composed into a single flat store
 9. Recent messages — fills remaining budget, newest→oldest
 
 **Post-chat processing** (`services/postChatProcessor.js`) — orchestrates all 6 extractors:
-1. Fact extraction (zero-inference)
+1. Fact extraction (phi4-mini, async — gated on extraction model readiness)
 2. Summarization check + background Ollama call
-3. State extraction + history diff logging (zero-inference, both modes — dispatches to `extractWorldState()` or `extractSessionState()` by mode)
-4. Character stance extraction (zero-inference, roleplay only)
+3. State extraction + history diff logging (phi4-mini, async, both modes — gated on extraction model readiness, dispatches to `extractWorldState()` or `extractSessionState()` by mode)
+4. Character stance extraction (zero-inference regex, roleplay only)
 5. Debate extraction (inference, background, every 10 turns, both modes — mode-aware prompt)
 6. Global memory promotion + relationship update (if crossSessionMemory enabled)
 
@@ -104,33 +111,41 @@ The store is split into domain-specific slices composed into a single flat store
 - Manual search: `GET /api/sessions/:id/search?q=<query>`
 
 ### World / Session State Manager
-Same pipes, different extraction strategies per mode. Both store in `sessions.world_state` JSON.
+Same pipes, different extraction strategies per mode. Both store in `sessions.world_state` JSON. Both use phi4-mini via `ollamaService.extract()` with JSON format mode.
+
+**Extraction Model Manager** (`services/extractionModelManager.js`):
+- Singleton that manages phi4-mini lifecycle
+- On startup: checks if model exists, auto-downloads in background if missing
+- Exposes `isReady()` (boolean) and `getStatus()` (status object)
+- Extraction is skipped gracefully when model isn't ready (chat still works)
+- Model name configurable via `OLLAMA_EXTRACTION_MODEL` env var (default: `phi4-mini`)
 
 **Roleplay mode** (`extractWorldState(settings)`):
-- Settings-aware: uses character names from `settings.roleplay.character` + `settings.roleplay.characters` + `settings.userPersona.name` for reliable character detection via string matching (NLP-detected people only added if they match a settings name)
-- Location: conservative place-noun whitelist (~60 nouns: library, study, basement, corridor, etc.) + "the/a + place" pattern. Prefers new locations over re-confirming current. NLP `doc.places()` filtered against blacklist
-- Events: separate user-action patterns (fell, screamed, tripped) vs narrative-action patterns (collapsed, cracked, shifted). `isDialogueLine()` filter rejects speech, opinions, personification, short emotes, and questions
-- Tracks location, time, present characters, events, mood + known characters registry, event lifecycle, location breadcrumbs
+- Settings-aware: passes character names + user persona name to the LLM prompt for reliable character detection
+- LLM extracts: `currentLocation`, `currentTime`, `presentCharacters` (physically in scene only), `departedCharacters`, `newEvents`, `newDiscoveries`, `mood` — returns structured JSON
+- Prompt explicitly distinguishes "physically present in the room" from "merely mentioned or discussed" — organizations, groups, and referenced-but-absent people are excluded from presentCharacters
+- State snapshot sent to LLM includes recent events and discoveries for context continuity
+- Post-extraction lifecycle logic: event aging (10/20 turns), discovery aging (15/30 turns), location trail, knownCharacters registry, mood validation against allowed values
 
 **Utility mode** (`extractSessionState()`):
-- Tracks `currentFocus` (dominant topic via weighted bigram/trigram frequency), `openQuestions`, `decisions`, `parkedItems`, `knownEntities` (topics/tools/APIs/files)
+- LLM extracts: `currentFocus`, `newQuestions`, `newDecisions`, `newParkedItems`, `newEntities`, `newDiscoveries` — returns structured JSON
+- Post-extraction lifecycle logic: question aging, auto-park, decision aging, entity tracking, discovery aging
 - Open questions that were never answered (lastConfirmed === firstDetected) auto-park after 10 turns; answered-then-dropped questions follow normal fading lifecycle
 - Decisions age slower (30 turns → fading, 40 → `archived` — out of context but logged to history and queryable)
-- Known entities require multi-turn or cross-message appearance before promotion (first mention = candidate, second = promoted)
 
 **Shared infrastructure:**
 - `diffWorldState()` — config-driven field comparison, works for both modes. Produces change log in `world_state_history` (capped at 50)
 - `matchEvent()` — fuzzy Jaccard similarity + proper noun matching for deduplication
-- **Event Lifecycle** — objects `{ text, firstDetected, lastConfirmed, state }`. States: `active` → `fading` → `resolved` (or `archived` for decisions). Used for events, questions, decisions, parked items
+- **Event Lifecycle** — objects `{ text, firstDetected, lastConfirmed, state }`. States: `active` → `fading` → `resolved` (or `archived` for decisions). Used for events, discoveries, questions, decisions, parked items. Aging rates: events (10/20), discoveries (15/30), questions (10/20), decisions (30/40)
 - **Debate Tracking** — `services/debateExtractor.js` runs every 10 turns in both modes with mode-aware prompts. Stored in `world_state.debates`. Merged by topic keyword overlap, capped at 10
 - **World Snapshots** — `services/worldSnapshotService.js` creates snapshots on session archive (both modes), seeds new sessions (requires `crossSessionMemory` enabled)
-- `WorldStatePanel.jsx` — dual-mode collapsible panel (collapsed by default): "World State" (roleplay) or "Session State" (utility). Re-extract button (↻) replays all messages through current extractor. History log shows state changes in reverse chronological order. Auto-reloads after each message via `loadWorldState()` in `chatSlice.js` `sendMessage()` finally block
+- `WorldStatePanel.jsx` — dual-mode collapsible panel (collapsed by default): "World State" (roleplay) or "Session State" (utility). Re-extract button (↻) replays all messages through current extractor (shows error if phi4-mini unavailable). Shows discoveries in both modes. History log shows state changes in reverse chronological order. Auto-reloads after each message via `loadWorldState()` in `chatSlice.js` `sendMessage()` finally block
 - API: `GET/PUT /api/sessions/:id/world-state`, `POST /api/sessions/:id/reextract-state`
 
 ### Story Notes vs Auto-Extracted State
 Story notes and world/session state serve complementary roles:
 - **Story notes** — manual, free-form, user-written. For authorial intent, meta-instructions, secret plot points, and reminders. Tracks *what you want to happen* or *what the AI should know but hasn't been told yet*.
-- **World/session state** — automatic, structured, NLP-extracted. Tracks *what happened* — locations, characters, events, decisions, open questions.
+- **World/session state** — automatic, structured, LLM-extracted via phi4-mini. Tracks *what happened* — locations, characters, events, discoveries, decisions, open questions.
 - Both are injected into context every turn as `[Story Notes]` and `[World State]`/`[Session State]` blocks. They don't overlap — one is directive, the other is observational.
 
 ### Character Enforcement / Dialectic
@@ -163,7 +178,7 @@ Story notes and world/session state serve complementary roles:
 - `PUT /api/sessions/:id/notes` — save story notes
 - `GET /api/sessions/:id/world-state` — get world state + history
 - `PUT /api/sessions/:id/world-state` — update world state
-- `POST /api/sessions/:id/reextract-state` — replay all messages through extractor, rebuild state + history from scratch
+- `POST /api/sessions/:id/reextract-state` — replay all messages through extractor, rebuild state + history from scratch. Calls `ensureReady()` to wait for phi4-mini download if needed. Returns 503 if extraction model unavailable.
 - `GET /api/sessions/:id/search?q=<query>` — FTS5 message search
 
 **Memory:**
@@ -228,15 +243,19 @@ Users can save current settings as a named "world" template. Stored as JSON in `
 12. **FTS5 backfill** — existing messages are auto-indexed on first startup after migration. The backfill runs once and is safe to re-run.
 13. **Cross-session memory is on by default** — `settings.general.crossSessionMemory` defaults to `true`. Can be disabled in settings. When disabled, no global memory promotion or retrieval occurs.
 14. **postChatProcessor is fire-and-forget** — called without `await` in the chat endpoint. Summarization and debate extraction run in `setImmediate()`. Errors are caught and logged, never block the SSE response.
-15. **Event backward compat** — `ongoingEvents` can contain strings (legacy) or objects (new). Always check `typeof` before accessing `.text` or `.state`. The extractor auto-migrates strings to objects.
+15. **Event backward compat** — `ongoingEvents` and `discoveries` can contain strings (legacy) or objects (new). Always check `typeof` before accessing `.text` or `.state`. The extractor auto-migrates strings to objects.
 16. **`_resolvedEvents` is transient** — set by `extractWorldState()` for `postChatProcessor` to log, then deleted before saving to DB. Never persisted.
-17. **Debate extraction is inference-based** — unlike other state extraction (zero-inference), `debateExtractor.js` calls Ollama. Runs in `setImmediate()` every 10 turns, both modes. Mode-aware prompt selected via `mode` parameter.
+17. **Debate extraction is inference-based** — unlike other state extraction, `debateExtractor.js` calls the chat model (not phi4-mini). Runs in `setImmediate()` every 10 turns, both modes. Mode-aware prompt selected via `mode` parameter.
 18. **World snapshots** — created on archive and seeded on create by default. Only skipped if `crossSessionMemory` is explicitly set to `false`. Works for both modes.
-19. **Session state extraction (utility mode)** — `extractSessionState()` tracks focus, questions, decisions, parked items, entities. Same data flow as roleplay: stored in `world_state` JSON, diffed by `diffWorldState()`, injected as `[Session State]` in context block.
-20. **`diffWorldState()` is config-driven** — uses `DIFF_FIELDS` config object instead of hardcoded field arrays. Supports both roleplay fields (location, characters) and utility fields (focus, questions, decisions). Adding new fields only requires updating the config.
+19. **Session state extraction (utility mode)** — `extractSessionState()` tracks focus, questions, decisions, parked items, entities, discoveries. Same data flow as roleplay: stored in `world_state` JSON, diffed by `diffWorldState()`, injected as `[Session State]` in context block.
+20. **`diffWorldState()` is config-driven** — uses `DIFF_FIELDS` config object instead of hardcoded field arrays. Supports both roleplay fields (location, characters, discoveries) and utility fields (focus, questions, decisions, discoveries). Adding new fields only requires updating the config.
+21. **Extraction model (phi4-mini)** — Auto-downloaded on startup if missing. Extraction is skipped while downloading (graceful degradation). Health endpoint includes `extractionModel` status. Override model name with `OLLAMA_EXTRACTION_MODEL` env var. Run Ollama with `OLLAMA_MAX_LOADED_MODELS=2` to keep both models warm. Re-extraction endpoint calls `ensureReady()` to block until model is available (returns 503 if not).
+22. **Present characters are physically-present only** — The extraction prompt explicitly instructs the LLM to only list characters physically in the scene, not organizations, groups, or people merely mentioned in dialogue. `departedCharacters` is a separate LLM output field for characters who left the scene.
 
 ## Environment Variables
-`PORT` (3001), `OLLAMA_URL` (localhost:11434), `OLLAMA_CHAT_MODEL` (llama2), `SESSION_SECRET` (auto-gen), `OREAD_ENCRYPTION_PASSPHRASE` (auto-gen, required in prod), `ENABLE_AUTH` (false), `ENABLE_CSRF` (true), `CORS_ORIGINS` (localhost:5173,localhost:3000)
+`PORT` (3001), `OLLAMA_URL` (localhost:11434), `OLLAMA_CHAT_MODEL` (llama2), `OLLAMA_EXTRACTION_MODEL` (phi4-mini), `SESSION_SECRET` (auto-gen), `OREAD_ENCRYPTION_PASSPHRASE` (auto-gen, required in prod), `ENABLE_AUTH` (false), `ENABLE_CSRF` (true), `CORS_ORIGINS` (localhost:5173,localhost:3000)
+
+**Recommended Ollama launch:** `OLLAMA_MAX_LOADED_MODELS=2 OLLAMA_NUM_PARALLEL=4 ollama serve` — keeps chat model and extraction model (phi4-mini) loaded simultaneously.
 
 ## In-Progress Branches
 - **`cloud-api-integration`** — Adds OpenAI + Anthropic cloud model support alongside Ollama. Provider auto-detected from model name. API keys encrypted (AES-256-GCM) in SQLite `api_keys` table. UI in Settings > Integrations.

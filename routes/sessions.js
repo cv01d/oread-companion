@@ -6,6 +6,7 @@ import { asyncHandler } from '../middleware/errorHandler.js';
 import { searchMessages } from '../services/memorySearch.js';
 import { createWorldSnapshot, getWorldSnapshot, seedWorldState } from '../services/worldSnapshotService.js';
 import { extractWorldState, extractSessionState, diffWorldState } from '../services/worldStateExtractor.js';
+import extractionModelManager from '../services/extractionModelManager.js';
 
 const router = express.Router();
 
@@ -360,6 +361,17 @@ router.put('/:id/world-state', validateUUID('id'), validate(worldStateSchema), a
 
 // Re-extract world/session state from all messages
 router.post('/:id/reextract-state', validateUUID('id'), asyncHandler(async (req, res) => {
+  // Ensure extraction model is ready — wait for download if needed
+  const modelReady = await extractionModelManager.ensureReady(300000);
+  if (!modelReady) {
+    const status = extractionModelManager.getStatus();
+    return res.status(503).json({
+      success: false,
+      error: `Extraction model (${status.model}) is not available. Status: ${status.status}${status.error ? ' — ' + status.error : ''}`,
+      extractionModelStatus: status
+    });
+  }
+
   const session = await database.get(
     'SELECT mode, settings_snapshot FROM sessions WHERE id = ?',
     [req.params.id]
@@ -381,6 +393,7 @@ router.post('/:id/reextract-state', validateUUID('id'), asyncHandler(async (req,
   // Replay all message pairs through the extractor
   let state = {};
   const history = [];
+  let turnsProcessed = 0;
 
   for (let i = 0; i < messages.length - 1; i += 2) {
     const userMsg = messages[i]?.role === 'user' ? messages[i].content : '';
@@ -389,8 +402,8 @@ router.post('/:id/reextract-state', validateUUID('id'), asyncHandler(async (req,
 
     const oldState = { ...state };
     state = mode === 'roleplay'
-      ? extractWorldState(userMsg, assistantMsg, state, turn, settings)
-      : extractSessionState(userMsg, assistantMsg, state, turn);
+      ? await extractWorldState(userMsg, assistantMsg, state, turn, settings)
+      : await extractSessionState(userMsg, assistantMsg, state, turn);
 
     const changes = diffWorldState(oldState, state, turn);
     if (state._resolvedEvents?.length > 0) {
@@ -400,6 +413,7 @@ router.post('/:id/reextract-state', validateUUID('id'), asyncHandler(async (req,
     }
     delete state._resolvedEvents;
     history.push(...changes);
+    turnsProcessed++;
   }
 
   const cappedHistory = history.slice(-50);
@@ -409,7 +423,7 @@ router.post('/:id/reextract-state', validateUUID('id'), asyncHandler(async (req,
     [JSON.stringify(state), JSON.stringify(cappedHistory), req.params.id]
   );
 
-  res.json({ success: true, worldState: state, historyEntries: cappedHistory.length });
+  res.json({ success: true, worldState: state, historyEntries: cappedHistory.length, turnsProcessed });
 }));
 
 // Search messages in session

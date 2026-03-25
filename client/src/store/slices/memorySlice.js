@@ -116,6 +116,7 @@ export const createMemorySlice = (set, get) => ({
       return data;
     } catch (error) {
       console.error('Failed to re-extract world state:', error);
+      return { success: false, error: error.message || 'Re-extraction failed' };
     }
   },
 
