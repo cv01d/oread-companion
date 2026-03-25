@@ -239,7 +239,7 @@ app.post('/api/chat', validate(chatSchema), asyncHandler(async (req, res) => {
 
         // Load session context data
         const session = await database.get(
-          `SELECT story_notes, extracted_facts, rolling_summary, world_state, character_stances FROM sessions WHERE id = ?`,
+          `SELECT story_notes, extracted_facts, rolling_summary, world_state, world_state_history, character_stances FROM sessions WHERE id = ?`,
           [sessionId]
         );
 
@@ -247,6 +247,8 @@ app.post('/api/chat', validate(chatSchema), asyncHandler(async (req, res) => {
         const rollingSummary = session?.rolling_summary || '';
         let worldStateData = {};
         try { worldStateData = JSON.parse(session?.world_state || '{}'); } catch (e) { /* invalid JSON */ }
+        let worldStateHistory = [];
+        try { worldStateHistory = JSON.parse(session?.world_state_history || '[]'); } catch (e) { /* invalid JSON */ }
         let extractedFactsData = [];
         try { extractedFactsData = JSON.parse(session?.extracted_facts || '[]'); } catch (e) { /* invalid JSON */ }
         let characterStancesData = {};
@@ -301,6 +303,7 @@ app.post('/api/chat', validate(chatSchema), asyncHandler(async (req, res) => {
           contextBudget,
           rollingSummary,
           worldState: worldStateData,
+          worldStateHistory,
           characterStances: characterStancesData,
           recalledMessages,
           globalContext,

@@ -13,9 +13,133 @@ function estimateTokens(text) {
 }
 
 /**
+ * Tokenize text into lowercase words, stripping stopwords.
+ */
+const STOPWORDS = new Set(['the','a','an','is','was','are','were','be','been','being','have','has','had','do','does','did','will','would','could','should','may','might','shall','can','need','dare','ought','used','to','of','in','for','on','with','at','by','from','as','into','through','during','before','after','above','below','between','out','off','over','under','again','further','then','once','here','there','when','where','why','how','all','both','each','few','more','most','other','some','such','no','nor','not','only','own','same','so','than','too','very','just','because','but','and','or','if','that','this','it','i','me','my','we','our','you','your','he','she','they','them','what','which','who','whom']);
+
+function tokenize(text) {
+  if (!text) return new Set();
+  return new Set(
+    text.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length > 2 && !STOPWORDS.has(w))
+  );
+}
+
+/**
+ * Format a history entry as a human-readable line.
+ */
+function formatHistoryEntry(entry, currentTurn) {
+  const ago = currentTurn ? `${currentTurn - entry.turn} turns ago` : `turn ${entry.turn}`;
+  if (entry.from && entry.to) {
+    return `${ago}: ${entry.field} changed from "${entry.from}" to "${entry.to}"`;
+  } else if (entry.action && entry.to) {
+    return `${ago}: ${entry.field} — ${entry.action}: ${entry.to}`;
+  } else if (entry.action && entry.from) {
+    return `${ago}: ${entry.field} — ${entry.action}: ${entry.from}`;
+  }
+  return `${ago}: ${entry.field} changed`;
+}
+
+/**
+ * Select relevant history entries: always the most recent N, plus keyword-matched older ones.
+ */
+function selectRelevantHistory(history, userMessage, currentTurn) {
+  if (!history || history.length === 0) return [];
+
+  const RECENT_COUNT = 3;
+  const MAX_TOTAL = 8;
+
+  // Always include the most recent entries
+  const recent = history.slice(-RECENT_COUNT);
+  const recentTurns = new Set(recent.map(e => `${e.turn}:${e.field}:${e.from}:${e.to}`));
+
+  // Keyword-match older entries against user message
+  const userTokens = tokenize(userMessage);
+  if (userTokens.size === 0) return recent;
+
+  const older = history.slice(0, -RECENT_COUNT);
+  const scored = [];
+
+  for (const entry of older) {
+    const entryText = [entry.field, entry.from, entry.to, entry.action].filter(Boolean).join(' ');
+    const entryTokens = tokenize(entryText);
+    if (entryTokens.size === 0) continue;
+
+    // Jaccard-like: count overlapping tokens
+    let overlap = 0;
+    for (const token of userTokens) {
+      if (entryTokens.has(token)) overlap++;
+    }
+    const score = overlap / Math.min(userTokens.size, entryTokens.size);
+
+    if (score >= 0.2) {
+      const key = `${entry.turn}:${entry.field}:${entry.from}:${entry.to}`;
+      if (!recentTurns.has(key)) {
+        scored.push({ entry, score });
+      }
+    }
+  }
+
+  // Sort by relevance, take top entries up to cap
+  scored.sort((a, b) => b.score - a.score);
+  const matched = scored.slice(0, MAX_TOTAL - recent.length).map(s => s.entry);
+
+  // Combine and sort chronologically
+  const combined = [...matched, ...recent];
+  combined.sort((a, b) => a.turn - b.turn);
+  return combined;
+}
+
+/**
+ * Detect and collapse repetition loops in message history.
+ * When consecutive assistant responses are identical (or near-identical),
+ * collapse them to a single instance and flag the repetition.
+ * Returns { messages, repetitionDetected }.
+ */
+function deduplicateRepetitions(messages) {
+  if (messages.length < 4) return { messages, repetitionDetected: false };
+
+  const result = [];
+  let repetitionDetected = false;
+  let lastAssistantContent = null;
+
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i];
+
+    if (msg.role === 'assistant') {
+      const content = msg.content?.trim() || '';
+      // Check for near-identical: same first 200 chars (handles minor trailing differences)
+      const signature = content.substring(0, 200);
+
+      if (lastAssistantContent && lastAssistantContent === signature) {
+        // This is a repeated assistant response — skip it
+        repetitionDetected = true;
+        // Also skip the user message immediately before this repeated response
+        // (it was a retry that got the same answer)
+        if (result.length > 0 && result[result.length - 1].role === 'user') {
+          result.pop();
+        }
+        continue;
+      }
+
+      lastAssistantContent = signature;
+    } else {
+      // Reset tracking when we see a non-duplicate flow
+    }
+
+    result.push(msg);
+  }
+
+  if (repetitionDetected) {
+    console.warn(`⚠️ Repetition loop detected: collapsed ${messages.length - result.length} duplicate messages`);
+  }
+
+  return { messages: result, repetitionDetected };
+}
+
+/**
  * Build a compact context block from story notes, rolling summary, and extracted facts.
  */
-function buildContextBlock(storyNotes, extractedFacts, rollingSummary, worldState, characterStances, globalContext, mode) {
+function buildContextBlock(storyNotes, extractedFacts, rollingSummary, worldState, characterStances, globalContext, mode, worldStateHistory, lastUserMessage) {
   const parts = [];
 
   if (storyNotes && storyNotes.trim()) {
@@ -185,6 +309,16 @@ function buildContextBlock(storyNotes, extractedFacts, rollingSummary, worldStat
 
   }
 
+  // Inject relevant world/session state history
+  if (worldStateHistory && worldStateHistory.length > 0) {
+    const currentTurn = worldState?.lastUpdated || 0;
+    const relevant = selectRelevantHistory(worldStateHistory, lastUserMessage || '', currentTurn);
+    if (relevant.length > 0) {
+      const historyLines = relevant.map(e => formatHistoryEntry(e, currentTurn));
+      parts.push(`[Recent Changes]\n${historyLines.join('\n')}`);
+    }
+  }
+
   if (characterStances && Object.keys(characterStances).length > 0) {
     const stanceLines = [];
     for (const [charName, data] of Object.entries(characterStances)) {
@@ -240,10 +374,13 @@ function buildContextBlock(storyNotes, extractedFacts, rollingSummary, worldStat
  * @param {number} params.contextBudget - Total token budget
  * @returns {{ messages: Array, contextBlock: string }}
  */
-export function selectMessages({ messages, systemPrompt, storyNotes, extractedFacts, contextBudget, rollingSummary, worldState, characterStances, recalledMessages, globalContext, mode }) {
+export function selectMessages({ messages, systemPrompt, storyNotes, extractedFacts, contextBudget, rollingSummary, worldState, worldStateHistory, characterStances, recalledMessages, globalContext, mode }) {
   if (!messages || messages.length === 0) {
     return { messages: [], contextBlock: '' };
   }
+
+  // Detect and collapse repetition loops — consecutive identical assistant responses
+  const { messages: dedupedMessages, repetitionDetected } = deduplicateRepetitions(messages);
 
   let budget = contextBudget;
 
@@ -252,26 +389,33 @@ export function selectMessages({ messages, systemPrompt, storyNotes, extractedFa
   budget -= systemTokens;
 
   // Build context block from story notes + extracted facts
-  const contextBlock = buildContextBlock(storyNotes, extractedFacts, rollingSummary || '', worldState, characterStances, globalContext, mode);
+  const lastUserMessage = dedupedMessages.length > 0 ? dedupedMessages[dedupedMessages.length - 1]?.content || '' : '';
+  let contextBlock = buildContextBlock(storyNotes, extractedFacts, rollingSummary || '', worldState, characterStances, globalContext, mode, worldStateHistory, lastUserMessage);
+
+  // When a repetition loop was detected, inject an anti-repetition instruction
+  if (repetitionDetected) {
+    contextBlock += '\n\n[IMPORTANT: Your previous response was repeated verbatim. You MUST generate a fresh, original response that advances the conversation. Do NOT repeat or paraphrase your earlier reply. Respond to what the user just said and move the scene/conversation forward.]';
+  }
+
   const contextTokens = estimateTokens(contextBlock);
   budget -= contextTokens;
 
   // System prompt alone exceeds budget — send last 2 messages only
   if (budget <= 0) {
     console.warn('Context budget exceeded by system prompt + context block. Sending last 2 messages only.');
-    const last2 = messages.slice(-2).map((m, i) => ({
+    const last2 = dedupedMessages.slice(-2).map((m, i) => ({
       ...m,
-      _originalIndex: messages.length - 2 + i
+      _originalIndex: dedupedMessages.length - 2 + i
     }));
     return { messages: last2, contextBlock };
   }
 
   // Identify anchors: first user message + first assistant reply
   const anchors = new Set();
-  const firstUserIdx = messages.findIndex(m => m.role === 'user');
+  const firstUserIdx = dedupedMessages.findIndex(m => m.role === 'user');
   if (firstUserIdx >= 0) {
     anchors.add(firstUserIdx);
-    const firstAssistantIdx = messages.findIndex((m, i) => i > firstUserIdx && m.role === 'assistant');
+    const firstAssistantIdx = dedupedMessages.findIndex((m, i) => i > firstUserIdx && m.role === 'assistant');
     if (firstAssistantIdx >= 0) {
       anchors.add(firstAssistantIdx);
     }
@@ -279,8 +423,8 @@ export function selectMessages({ messages, systemPrompt, storyNotes, extractedFa
 
   // Identify pinned messages (excluding anchors — deduplicate)
   const pinnedIndices = [];
-  for (let i = 0; i < messages.length; i++) {
-    if (messages[i].pinned && !anchors.has(i)) {
+  for (let i = 0; i < dedupedMessages.length; i++) {
+    if (dedupedMessages[i].pinned && !anchors.has(i)) {
       pinnedIndices.push(i);
     }
   }
@@ -288,13 +432,13 @@ export function selectMessages({ messages, systemPrompt, storyNotes, extractedFa
   // Deduct anchor token costs
   let anchorTokens = 0;
   for (const idx of anchors) {
-    anchorTokens += estimateTokens(messages[idx].content);
+    anchorTokens += estimateTokens(dedupedMessages[idx].content);
   }
 
   // Always include the latest user message
-  const lastMsgIdx = messages.length - 1;
+  const lastMsgIdx = dedupedMessages.length - 1;
   const lastMsgInAnchorsOrPins = anchors.has(lastMsgIdx) || pinnedIndices.includes(lastMsgIdx);
-  const lastMsgTokens = lastMsgInAnchorsOrPins ? 0 : estimateTokens(messages[lastMsgIdx].content);
+  const lastMsgTokens = lastMsgInAnchorsOrPins ? 0 : estimateTokens(dedupedMessages[lastMsgIdx].content);
 
   budget -= anchorTokens;
   budget -= lastMsgTokens;
@@ -304,7 +448,7 @@ export function selectMessages({ messages, systemPrompt, storyNotes, extractedFa
   // Sort pinned by index descending (newest first)
   const sortedPinned = [...pinnedIndices].sort((a, b) => b - a);
   for (const idx of sortedPinned) {
-    const tokens = estimateTokens(messages[idx].content);
+    const tokens = estimateTokens(dedupedMessages[idx].content);
     if (budget - tokens >= 0) {
       budget -= tokens;
       includedPinned.push(idx);
@@ -316,9 +460,9 @@ export function selectMessages({ messages, systemPrompt, storyNotes, extractedFa
   const alreadySelected = new Set([...anchors, ...includedPinned]);
   if (!lastMsgInAnchorsOrPins) alreadySelected.add(lastMsgIdx);
 
-  for (let i = messages.length - 2; i >= 0; i--) {
+  for (let i = dedupedMessages.length - 2; i >= 0; i--) {
     if (alreadySelected.has(i)) continue;
-    const tokens = estimateTokens(messages[i].content);
+    const tokens = estimateTokens(dedupedMessages[i].content);
     if (budget - tokens >= 0) {
       budget -= tokens;
       selectedRecent.push(i);
@@ -350,8 +494,8 @@ export function selectMessages({ messages, systemPrompt, storyNotes, extractedFa
     }
 
     result.push({
-      role: messages[idx].role,
-      content: messages[idx].content
+      role: dedupedMessages[idx].role,
+      content: dedupedMessages[idx].content
     });
   }
 
