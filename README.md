@@ -277,4 +277,4 @@ App.jsx
 
 ---
 
-MIT License
+Copyright 2026 Claudette Raynor. This software is provided for non-commercial, personal, and educational use only. Commercial redistribution or use is strictly prohibited without prior written consent from the developer.
