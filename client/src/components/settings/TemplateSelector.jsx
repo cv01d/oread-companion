@@ -69,7 +69,7 @@ export default function TemplateSelector({ selectedTemplateId, onSelect }) {
           <h4 className="template-selector__preview-title">
             {previewTemplate.name}
             <span className="template-selector__preview-badge">
-              {previewTemplate.category === 'roleplay' ? 'Roleplay' : 'Utility'}
+              {previewTemplate.category === 'utility' ? 'Utility' : 'Roleplay'}
             </span>
             {previewTemplate.isUserTemplate && (
               <span className="template-selector__preview-badge template-selector__preview-badge--user">

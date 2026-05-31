@@ -8,7 +8,6 @@ export default function WorldStatePanel() {
   const saveWorldState = useStore((s) => s.saveWorldState);
   const reextractWorldState = useStore((s) => s.reextractWorldState);
   const currentSessionId = useStore((s) => s.currentSessionId);
-  const mode = useStore((s) => s.settings.mode);
 
   const [editing, setEditing] = useState(null);
   const [editValue, setEditValue] = useState('');
@@ -17,7 +16,8 @@ export default function WorldStatePanel() {
   const [reextracting, setReextracting] = useState(false);
   const [reextractError, setReextractError] = useState(null);
 
-  const isRoleplay = mode === 'roleplay';
+  // Roleplay-only app: the world-state panel always renders the roleplay view.
+  const isRoleplay = true;
 
   const hasState = worldState && (
     isRoleplay

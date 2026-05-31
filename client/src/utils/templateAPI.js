@@ -1,5 +1,15 @@
 import { apiFetch } from './apiClient';
 
+// Fetch a single world's full JSON (including `.settings`) by id.
+// The list endpoint (GET /api/templates) returns only { id, name, isUserTemplate },
+// so the full settings must be loaded on demand when a world is applied.
+export async function getTemplate(templateId) {
+  const response = await apiFetch(`/api/templates/${encodeURIComponent(templateId)}`);
+  const data = await response.json();
+  if (!data.success) throw new Error(data.error || 'Failed to load template');
+  return data.template;
+}
+
 export async function saveUserTemplate(name, description, settings) {
   const response = await apiFetch('/api/templates/user', {
     method: 'POST',

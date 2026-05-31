@@ -1,8 +1,52 @@
 import { loadTemplates } from '../../data/templates';
-import { saveUserTemplate as saveUserTemplateAPI, deleteUserTemplate as deleteUserTemplateAPI } from '../../utils/templateAPI';
+import { saveUserTemplate as saveUserTemplateAPI, deleteUserTemplate as deleteUserTemplateAPI, getTemplate as getTemplateAPI } from '../../utils/templateAPI';
+import { mergeWithDefaults } from './settingsSlice';
 
 export const createTemplateSlice = (set, get) => ({
   templates: [],
+
+  // Apply a world by id. The templates list only carries { id, name, isUserTemplate },
+  // so fetch the full world (with `.settings`) before applying. Pass null to clear.
+  applyTemplate: async (template) => {
+    if (!template) {
+      const current = get().settings;
+      get().setSettings({
+        ...current,
+        meta: {
+          ...current.meta,
+          templateId: null,
+          isUserTemplate: false,
+          lastModified: new Date().toISOString()
+        }
+      });
+      return { success: true };
+    }
+
+    try {
+      const full = await getTemplateAPI(template.id);
+      const settings = full?.settings;
+      if (!settings) throw new Error('Template has no settings');
+
+      // oread-cli worlds carry a minimal shape (e.g. userPersona without
+      // tastes/linguisticFilters). Merge onto defaults so every settings panel
+      // has the full structure it expects.
+      const merged = mergeWithDefaults(settings);
+
+      get().setSettings({
+        ...merged,
+        meta: {
+          ...merged.meta,
+          templateId: template.id,
+          isUserTemplate: template.isUserTemplate || false,
+          lastModified: new Date().toISOString()
+        }
+      });
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to apply template:', error);
+      return { success: false, error: error.message };
+    }
+  },
 
   saveAsTemplate: async (name, description) => {
     try {
@@ -44,20 +88,6 @@ export const createTemplateSlice = (set, get) => ({
     try {
       const templates = await loadTemplates();
       set({ templates });
-
-      if (!get().settings.meta?.templateId && get().settings.mode === 'normal') {
-        const assistantTemplate = templates.find(t => t.id === 'expert-tutor');
-        if (assistantTemplate) {
-          get().setSettings({
-            ...assistantTemplate.settings,
-            meta: {
-              ...assistantTemplate.settings.meta,
-              templateId: assistantTemplate.id,
-              lastModified: new Date().toISOString()
-            }
-          });
-        }
-      }
     } catch (error) {
       console.error('Failed to load templates:', error);
     }

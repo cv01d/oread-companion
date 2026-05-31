@@ -3,6 +3,27 @@ import { saveSettings as saveSettingsAPI, loadSettings as loadSettingsAPI } from
 
 let saveTimeoutRef = null;
 
+// The oread-cli backend may return active settings that omit some sections
+// (e.g. `meta`, or fields the GUI expects). Deep-merge incoming settings onto
+// DEFAULT_SETTINGS so the UI always has the full shape (meta.templateId, etc.).
+function isPlainObject(v) {
+  return v && typeof v === 'object' && !Array.isArray(v);
+}
+
+export function mergeWithDefaults(loaded) {
+  const defaults = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+  const merge = (base, override) => {
+    if (!isPlainObject(override)) return base;
+    const out = { ...base };
+    for (const key of Object.keys(override)) {
+      const o = override[key];
+      out[key] = isPlainObject(o) && isPlainObject(base[key]) ? merge(base[key], o) : o;
+    }
+    return out;
+  };
+  return merge(defaults, loaded || {});
+}
+
 export const createSettingsSlice = (set, get) => ({
   settings: DEFAULT_SETTINGS,
   isSavingSettings: false,
@@ -67,32 +88,4 @@ export const createSettingsSlice = (set, get) => ({
     }
   },
 
-  loadCharactersForPrompt: (settings) => {
-    const settingsCopy = { ...settings };
-
-    if (settings.roleplay.characterMode === 'single') {
-      settingsCopy.roleplay = {
-        ...settingsCopy.roleplay,
-        _loadedCharacters: settings.roleplay.character
-          ? [settings.roleplay.character]
-          : [{ name: 'Assistant', role: '', knowledgeSkills: '', hobbiesInterests: '',
-               thingsToAvoid: '', backstory: '', inventory: '', traits: {} }]
-      };
-    }
-
-    if (settings.roleplay.characterMode === 'multi' && settings.roleplay.characters?.length > 0) {
-      const chars = [...settings.roleplay.characters];
-      const activeIdx = settings.roleplay.activeCharacterIndex || 0;
-      if (activeIdx > 0 && activeIdx < chars.length) {
-        const [active] = chars.splice(activeIdx, 1);
-        chars.unshift(active);
-      }
-      settingsCopy.roleplay = {
-        ...settingsCopy.roleplay,
-        _loadedCharacters: chars
-      };
-    }
-
-    return settingsCopy;
-  },
 });

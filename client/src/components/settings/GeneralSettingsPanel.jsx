@@ -81,26 +81,6 @@ export default function GeneralSettingsPanel({ settings, onChange, models = [] }
         </div>
 
         <div className="general-settings-panel__field">
-          <label className="general-settings-panel__label">
-            Frequency Penalty ({general.frequencyPenalty})
-          </label>
-          <p className="general-settings-panel__hint">
-            How much your character avoids repeating themselves. At 1.0 there is no penalty.
-            Higher values discourage repeated words and phrases, making dialogue feel fresher.
-            Too high and they may start avoiding common words unnaturally.
-          </p>
-          <input
-            type="range"
-            min="0"
-            max="2"
-            step="0.1"
-            value={general.frequencyPenalty}
-            onChange={(e) => handleFieldChange('frequencyPenalty', parseFloat(e.target.value))}
-            className="general-settings-panel__slider"
-          />
-        </div>
-
-        <div className="general-settings-panel__field">
           <label className="general-settings-panel__label">Max Tokens</label>
           <p className="general-settings-panel__hint">
             How long your character's responses can be. Each token is roughly a word or part of a word.

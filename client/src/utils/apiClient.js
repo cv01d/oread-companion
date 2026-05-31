@@ -1,42 +1,18 @@
 /**
- * Central API client with CSRF token management.
+ * Central API client.
  *
  * Usage: import { apiFetch } from './apiClient';
  *   apiFetch('/api/templates/active', { method: 'PUT', body: JSON.stringify(data) })
  *
- * The CSRF token is fetched once on first use and cached for the session.
+ * The backend (oread-cli) does not use CSRF tokens, so this is a thin fetch wrapper
+ * that just sets the JSON content type. `clearCsrfToken` is kept as a no-op so existing
+ * callers don't break.
  */
 
-let csrfToken = null;
-
-async function fetchCsrfToken() {
-  const res = await fetch('/api/csrf-token');
-  const data = await res.json();
-  if (!data.success) throw new Error('Failed to get CSRF token');
-  return data.csrfToken;
-}
-
-async function getCsrfToken() {
-  if (!csrfToken) {
-    csrfToken = await fetchCsrfToken();
-  }
-  return csrfToken;
-}
-
-const MUTATING_METHODS = new Set(['POST', 'PUT', 'DELETE', 'PATCH']);
-
 export async function apiFetch(url, options = {}) {
-  const method = (options.method || 'GET').toUpperCase();
   const headers = { 'Content-Type': 'application/json', ...options.headers };
-
-  if (MUTATING_METHODS.has(method)) {
-    headers['X-CSRF-Token'] = await getCsrfToken();
-  }
-
   return fetch(url, { ...options, headers });
 }
 
-// Allow manually refreshing the token (e.g. after session expiry)
-export function clearCsrfToken() {
-  csrfToken = null;
-}
+// Retained as a no-op for backwards compatibility with existing callers.
+export function clearCsrfToken() {}

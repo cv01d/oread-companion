@@ -17,7 +17,7 @@ export const createSessionSlice = (set, get) => ({
         method: 'POST',
         body: JSON.stringify({
           name,
-          mode: settings?.mode || 'normal',
+          mode: settings?.mode || 'roleplay',
           character_name: settings?.roleplay?.character?.name || null,
           character_mode: settings?.roleplay?.characterMode || 'single',
           settings_snapshot: settings || null

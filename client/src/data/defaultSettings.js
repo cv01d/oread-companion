@@ -1,7 +1,7 @@
 // Default settings structure for the application
 
 export const DEFAULT_SETTINGS = {
-  mode: 'roleplay', // 'roleplay' or 'normal'
+  mode: 'roleplay', // roleplay-only (the app is roleplay-only)
 
   roleplay: {
     world: {
@@ -14,17 +14,6 @@ export const DEFAULT_SETTINGS = {
     character: null, // Inline character data (single mode)
     characters: [], // Inline character data array (multi mode)
     activeCharacterIndex: 0 // Which character is the "main" in multi mode
-  },
-
-  utility: {
-    assistantIdentity: {
-      persona: '',
-      communicationStyle: ''
-    },
-    guardrails: {
-      negativeConstraints: '',
-      formattingPreferences: ''
-    }
   },
 
   userPersona: {
@@ -47,10 +36,8 @@ export const DEFAULT_SETTINGS = {
 
   general: {
     selectedModel: null,
-    chatSearch: false,
     temperature: 0.8,
     topP: 0.9,
-    frequencyPenalty: 1.1,
     maxTokens: 2048,
     contextBudget: 4096,
     autoSummarize: true,

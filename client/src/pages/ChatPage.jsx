@@ -66,14 +66,13 @@ export default function ChatPage() {
     if (!currentSessionId && messages.length === 0 && settingsLoaded && !sessionCreationAttempted.current) {
       sessionCreationAttempted.current = true;
 
-      // Create default session based on current mode
-      const mode = settings.mode;
-      const characterName = mode === 'roleplay'
-        ? settings.roleplay?.singleCharacter?.identity?.name
-        : null;
-      const sessionName = mode === 'roleplay'
-        ? `Chat with ${characterName || 'Character'}`
-        : 'New Chat';
+      // Create default session named after the active character.
+      const isMulti = settings.roleplay?.characterMode === 'multi';
+      const activeIdx = settings.roleplay?.activeCharacterIndex || 0;
+      const characterName = isMulti
+        ? settings.roleplay?.characters?.[activeIdx]?.name
+        : settings.roleplay?.character?.name;
+      const sessionName = `Chat with ${characterName || 'Character'}`;
 
       createSession(sessionName, settings);
     }

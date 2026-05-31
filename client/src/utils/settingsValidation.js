@@ -1,9 +1,12 @@
-// Settings validation utility
+// Settings validation utility (roleplay-only)
+//
+// Used by settingsImportExport.js to validate/sanitize imported settings JSON.
+// The app is roleplay-only, so there is no utility/assistant-mode validation.
 
 /**
- * Validate settings object structure and data types
- * @param {Object} settings - Settings object to validate
- * @returns {Object} { valid: boolean, errors: string[] }
+ * Validate settings object structure and data types.
+ * @param {Object} settings
+ * @returns {{ valid: boolean, errors: string[] }}
  */
 export function validateSettings(settings) {
   const errors = [];
@@ -12,44 +15,26 @@ export function validateSettings(settings) {
     return { valid: false, errors: ['Settings must be an object'] };
   }
 
-  // Validate mode
-  if (!['roleplay', 'normal'].includes(settings.mode)) {
-    errors.push('Mode must be either "roleplay" or "normal"');
+  // mode is roleplay-only; accept missing (we default it on sanitize), reject other values.
+  if (settings.mode !== undefined && settings.mode !== 'roleplay') {
+    errors.push('Mode must be "roleplay"');
   }
 
-  // Validate roleplay settings
   if (settings.roleplay) {
-    const roleplayErrors = validateRoleplaySettings(settings.roleplay);
-    errors.push(...roleplayErrors);
+    errors.push(...validateRoleplaySettings(settings.roleplay));
   }
 
-  // Validate utility settings
-  if (settings.utility) {
-    const utilityErrors = validateUtilitySettings(settings.utility);
-    errors.push(...utilityErrors);
-  }
-
-  // Validate user persona
   if (settings.userPersona) {
-    const personaErrors = validateUserPersona(settings.userPersona);
-    errors.push(...personaErrors);
+    errors.push(...validateUserPersona(settings.userPersona));
   }
 
-  // Validate general settings
   if (settings.general) {
-    const generalErrors = validateGeneralSettings(settings.general);
-    errors.push(...generalErrors);
+    errors.push(...validateGeneralSettings(settings.general));
   }
 
-  return {
-    valid: errors.length === 0,
-    errors
-  };
+  return { valid: errors.length === 0, errors };
 }
 
-/**
- * Validate roleplay settings
- */
 function validateRoleplaySettings(roleplay) {
   const errors = [];
 
@@ -57,80 +42,17 @@ function validateRoleplaySettings(roleplay) {
     errors.push('Roleplay world settings must be an object');
   }
 
-  if (!['single', 'multi'].includes(roleplay.characterMode)) {
+  if (roleplay.characterMode && !['single', 'multi'].includes(roleplay.characterMode)) {
     errors.push('Character mode must be either "single" or "multi"');
   }
 
-  // Validate character structure
-  if (roleplay.characterMode === 'single') {
-    if (!roleplay.singleCharacter || typeof roleplay.singleCharacter !== 'object') {
-      errors.push('Single character must be defined');
-    } else {
-      const charErrors = validateCharacter(roleplay.singleCharacter, 'single');
-      errors.push(...charErrors);
-    }
-  }
-
-  if (roleplay.characterMode === 'multi') {
-    if (!Array.isArray(roleplay.multipleCharacters)) {
-      errors.push('Multiple characters must be an array');
-    } else {
-      roleplay.multipleCharacters.forEach((char, index) => {
-        const charErrors = validateCharacter(char, 'multi');
-        errors.push(...charErrors.map(err => `Character ${index + 1}: ${err}`));
-      });
-    }
+  if (roleplay.characters !== undefined && !Array.isArray(roleplay.characters)) {
+    errors.push('Characters must be an array');
   }
 
   return errors;
 }
 
-/**
- * Validate character structure
- */
-function validateCharacter(character, mode) {
-  const errors = [];
-
-  if (!character.identity || typeof character.identity !== 'object') {
-    errors.push('Character identity must be an object');
-  }
-
-  if (!character.core || typeof character.core !== 'object') {
-    errors.push('Character core must be an object');
-  }
-
-  if (!character.dynamics || typeof character.dynamics !== 'object') {
-    errors.push('Character dynamics must be an object');
-  }
-
-  // Validate avatar image if present (should be base64 or empty)
-  if (character.avatarImage && typeof character.avatarImage !== 'string') {
-    errors.push('Avatar image must be a string');
-  }
-
-  return errors;
-}
-
-/**
- * Validate utility settings
- */
-function validateUtilitySettings(utility) {
-  const errors = [];
-
-  if (!utility.assistantIdentity || typeof utility.assistantIdentity !== 'object') {
-    errors.push('Assistant identity must be an object');
-  }
-
-  if (!utility.guardrails || typeof utility.guardrails !== 'object') {
-    errors.push('Guardrails must be an object');
-  }
-
-  return errors;
-}
-
-/**
- * Validate user persona
- */
 function validateUserPersona(persona) {
   const errors = [];
 
@@ -150,78 +72,55 @@ function validateUserPersona(persona) {
   return errors;
 }
 
-/**
- * Validate general settings
- */
 function validateGeneralSettings(general) {
   const errors = [];
 
-  // Validate temperature
   if (typeof general.temperature !== 'number' || general.temperature < 0 || general.temperature > 2) {
     errors.push('Temperature must be a number between 0 and 2');
   }
 
-  // Validate topP
   if (typeof general.topP !== 'number' || general.topP < 0 || general.topP > 1) {
     errors.push('Top P must be a number between 0 and 1');
   }
 
-  // Validate maxTokens
   if (typeof general.maxTokens !== 'number' || general.maxTokens < 1) {
     errors.push('Max tokens must be a positive number');
-  }
-
-  // Validate boolean fields
-  if (typeof general.webSearch !== 'boolean') {
-    errors.push('Web search must be a boolean');
-  }
-  if (typeof general.chatSearch !== 'boolean') {
-    errors.push('Chat search must be a boolean');
-  }
-  if (typeof general.memory !== 'boolean') {
-    errors.push('Memory must be a boolean');
   }
 
   return errors;
 }
 
 /**
- * Sanitize settings object (remove invalid data, ensure correct types)
- * @param {Object} settings - Settings to sanitize
- * @returns {Object} Sanitized settings
+ * Sanitize a settings object (coerce types, clamp values, ensure arrays).
+ * @param {Object} settings
+ * @returns {Object} sanitized settings
  */
 export function sanitizeSettings(settings) {
-  // Deep clone to avoid mutations
   const sanitized = JSON.parse(JSON.stringify(settings));
 
-  // Ensure mode is valid
-  if (!['roleplay', 'normal'].includes(sanitized.mode)) {
-    sanitized.mode = 'normal';
-  }
+  // Roleplay-only.
+  sanitized.mode = 'roleplay';
 
-  // Ensure arrays are arrays
-  if (sanitized.roleplay?.world?.hardRules && !Array.isArray(sanitized.roleplay.world.hardRules)) {
-    sanitized.roleplay.world.hardRules = [];
-  }
-
-  if (sanitized.roleplay?.multipleCharacters && !Array.isArray(sanitized.roleplay.multipleCharacters)) {
-    sanitized.roleplay.multipleCharacters = [];
+  if (sanitized.roleplay) {
+    if (sanitized.roleplay.world?.hardRules && !Array.isArray(sanitized.roleplay.world.hardRules)) {
+      sanitized.roleplay.world.hardRules = [];
+    }
+    if (sanitized.roleplay.characters && !Array.isArray(sanitized.roleplay.characters)) {
+      sanitized.roleplay.characters = [];
+    }
   }
 
   if (sanitized.userPersona?.linguisticFilters) {
-    if (!Array.isArray(sanitized.userPersona.linguisticFilters.bannedWords)) {
-      sanitized.userPersona.linguisticFilters.bannedWords = [];
-    }
-    if (!Array.isArray(sanitized.userPersona.linguisticFilters.bannedPhrases)) {
-      sanitized.userPersona.linguisticFilters.bannedPhrases = [];
-    }
+    const lf = sanitized.userPersona.linguisticFilters;
+    if (!Array.isArray(lf.bannedWords)) lf.bannedWords = [];
+    if (!Array.isArray(lf.bannedPhrases)) lf.bannedPhrases = [];
   }
 
-  // Clamp numeric values
   if (sanitized.general) {
-    sanitized.general.temperature = Math.max(0, Math.min(2, sanitized.general.temperature || 0.8));
-    sanitized.general.topP = Math.max(0, Math.min(1, sanitized.general.topP || 0.9));
-    sanitized.general.maxTokens = Math.max(1, sanitized.general.maxTokens || 2048);
+    const g = sanitized.general;
+    g.temperature = Math.max(0, Math.min(2, g.temperature ?? 0.8));
+    g.topP = Math.max(0, Math.min(1, g.topP ?? 0.9));
+    g.maxTokens = Math.max(1, g.maxTokens ?? 2048);
   }
 
   return sanitized;

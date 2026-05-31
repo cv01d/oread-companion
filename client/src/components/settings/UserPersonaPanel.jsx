@@ -23,7 +23,12 @@ const TIMEZONE_OPTIONS = [
 ];
 
 export default function UserPersonaPanel({ settings, onChange }) {
-  const { userPersona } = settings;
+  // Worlds loaded from oread-cli may carry a minimal userPersona
+  // ({ name, bio, skills, profession }) with no tastes/linguisticFilters.
+  // Normalize to the full shape so the panel never reads undefined sub-objects.
+  const userPersona = settings.userPersona || {};
+  const tastes = userPersona.tastes || {};
+  const linguisticFilters = userPersona.linguisticFilters || {};
 
   const handleFieldChange = (field, value) => {
     onChange({
@@ -41,7 +46,7 @@ export default function UserPersonaPanel({ settings, onChange }) {
       userPersona: {
         ...userPersona,
         tastes: {
-          ...userPersona.tastes,
+          ...tastes,
           [field]: value
         }
       }
@@ -54,7 +59,7 @@ export default function UserPersonaPanel({ settings, onChange }) {
       userPersona: {
         ...userPersona,
         linguisticFilters: {
-          ...userPersona.linguisticFilters,
+          ...linguisticFilters,
           [field]: value
         }
       }
@@ -67,7 +72,7 @@ export default function UserPersonaPanel({ settings, onChange }) {
         <div className="user-persona-panel__field">
           <label className="user-persona-panel__label">Your Name</label>
           <TextField
-            value={userPersona.name}
+            value={userPersona.name || ''}
             onChange={(value) => handleFieldChange('name', value)}
             placeholder="How should the AI address you?"
           />
@@ -76,7 +81,7 @@ export default function UserPersonaPanel({ settings, onChange }) {
         <div className="user-persona-panel__field">
           <label className="user-persona-panel__label">Profession</label>
           <TextField
-            value={userPersona.profession}
+            value={userPersona.profession || ''}
             onChange={(value) => handleFieldChange('profession', value)}
             placeholder="Your job or field of work"
           />
@@ -85,7 +90,7 @@ export default function UserPersonaPanel({ settings, onChange }) {
         <div className="user-persona-panel__field">
           <label className="user-persona-panel__label">Bio</label>
           <TextArea
-            value={userPersona.bio}
+            value={userPersona.bio || ''}
             onChange={(value) => handleFieldChange('bio', value)}
             placeholder="Brief description of yourself, background, or relevant context"
             rows={3}
@@ -95,7 +100,7 @@ export default function UserPersonaPanel({ settings, onChange }) {
         <div className="user-persona-panel__field">
           <label className="user-persona-panel__label">Skills & Expertise</label>
           <TextField
-            value={userPersona.skills}
+            value={userPersona.skills || ''}
             onChange={(value) => handleFieldChange('skills', value)}
             placeholder="Your skills, knowledge areas, or expertise"
           />
@@ -121,7 +126,7 @@ export default function UserPersonaPanel({ settings, onChange }) {
         <div className="user-persona-panel__field">
           <label className="user-persona-panel__label">Interests</label>
           <TextField
-            value={userPersona.tastes.interests}
+            value={tastes.interests || ''}
             onChange={(value) => handleTastesChange('interests', value)}
             placeholder="Topics you're interested in"
           />
@@ -130,7 +135,7 @@ export default function UserPersonaPanel({ settings, onChange }) {
         <div className="user-persona-panel__field">
           <label className="user-persona-panel__label">Hobbies</label>
           <TextField
-            value={userPersona.tastes.hobbies}
+            value={tastes.hobbies || ''}
             onChange={(value) => handleTastesChange('hobbies', value)}
             placeholder="Activities you enjoy"
           />
@@ -139,7 +144,7 @@ export default function UserPersonaPanel({ settings, onChange }) {
         <div className="user-persona-panel__field">
           <label className="user-persona-panel__label">Media Preferences</label>
           <TextField
-            value={userPersona.tastes.mediaPreferences}
+            value={tastes.mediaPreferences || ''}
             onChange={(value) => handleTastesChange('mediaPreferences', value)}
             placeholder="Books, movies, games, music you like"
           />
@@ -155,7 +160,7 @@ export default function UserPersonaPanel({ settings, onChange }) {
             Help the AI respect your boundaries and comfort zones.
           </p>
           <TextArea
-            value={userPersona.boundaries}
+            value={userPersona.boundaries || ''}
             onChange={(value) => handleFieldChange('boundaries', value)}
             placeholder="Topics to avoid, sensitivities, or comfort preferences"
             rows={3}
@@ -172,7 +177,7 @@ export default function UserPersonaPanel({ settings, onChange }) {
             Words the AI should never use in responses.
           </p>
           <TagInput
-            tags={userPersona.linguisticFilters.bannedWords}
+            tags={linguisticFilters.bannedWords || []}
             onChange={(tags) => handleLinguisticFiltersChange('bannedWords', tags)}
             placeholder="Add a word and press Enter"
           />
@@ -184,7 +189,7 @@ export default function UserPersonaPanel({ settings, onChange }) {
             Phrases or expressions the AI should avoid.
           </p>
           <TagInput
-            tags={userPersona.linguisticFilters.bannedPhrases}
+            tags={linguisticFilters.bannedPhrases || []}
             onChange={(tags) => handleLinguisticFiltersChange('bannedPhrases', tags)}
             placeholder="Add a phrase and press Enter"
           />

@@ -3,14 +3,12 @@ import useStore from '../store/useStore';
 import ModelSelector from '../components/model/ModelSelector';
 import ModelDownloader from '../components/model/ModelDownloader';
 import TemplateSelector from '../components/settings/TemplateSelector';
-import ModeSelector from '../components/settings/ModeSelector';
 import SettingsSection from '../components/settings/SettingsSection';
 import CollapsibleSection from '../components/settings/CollapsibleSection';
 import WorldSettingsPanel from '../components/settings/WorldSettingsPanel';
 import NarrativeSettingsPanel from '../components/settings/NarrativeSettingsPanel';
 import CharacterEditor from '../components/settings/CharacterEditor';
 import CharacterList from '../components/settings/CharacterList';
-import UtilitySettingsPanel from '../components/settings/UtilitySettingsPanel';
 import UserPersonaPanel from '../components/settings/UserPersonaPanel';
 import GeneralSettingsPanel from '../components/settings/GeneralSettingsPanel';
 import Button from '../components/ui/Button';
@@ -33,6 +31,7 @@ export default function Settings() {
   const templates = useStore((state) => state.templates);
   const fetchTemplates = useStore((state) => state.fetchTemplates);
   const saveAsTemplate = useStore((state) => state.saveAsTemplate);
+  const applyTemplate = useStore((state) => state.applyTemplate);
   const [activeTab, setActiveTab] = useState('mode');
   const [showSaveWorldForm, setShowSaveWorldForm] = useState(false);
   const [worldName, setWorldName] = useState('');
@@ -43,7 +42,7 @@ export default function Settings() {
   useEffect(() => {
     if (templates.length === 0) fetchTemplates();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // 'mode', 'roleplay', 'utility', 'persona', 'general', 'sessions', 'integrations'
+  }, []); // tabs: 'mode' (world), 'roleplay', 'persona', 'general', 'integrations'
 
   // Format last saved time
   const getLastSavedText = () => {
@@ -56,43 +55,11 @@ export default function Settings() {
     return lastSaved.toLocaleTimeString();
   };
 
-  // Handle template selection — loads the world's full settings.
-  // Edits made while a user template is active are saved back to that template
-  // automatically via the backend (PUT /api/templates/active propagates to the world file).
+  // Handle template selection — fetches the world's full settings and applies them.
+  // The templates list only carries { id, name, isUserTemplate }; applyTemplate()
+  // loads the full world via GET /api/templates/:id before applying.
   const handleTemplateSelect = async (template) => {
-    if (template) {
-      setSettings({
-        ...template.settings,
-        meta: {
-          ...template.settings.meta,
-          templateId: template.id,
-          isUserTemplate: template.isUserTemplate || false,
-          lastModified: new Date().toISOString()
-        }
-      });
-    } else {
-      // Clear template - reset to defaults but keep user's customizations
-      setSettings({
-        ...settings,
-        meta: {
-          ...settings.meta,
-          templateId: null,
-          lastModified: new Date().toISOString()
-        }
-      });
-    }
-  };
-
-  // Handle mode toggle
-  const handleModeChange = (mode) => {
-    setSettings({
-      ...settings,
-      mode,
-      meta: {
-        ...settings.meta,
-        lastModified: new Date().toISOString()
-      }
-    });
+    await applyTemplate(template || null);
   };
 
   // Handle character mode toggle (single vs multi)
@@ -175,19 +142,13 @@ export default function Settings() {
           className={`settings__tab ${activeTab === 'mode' ? 'settings__tab--active' : ''}`}
           onClick={() => setActiveTab('mode')}
         >
-          Mode
+          World
         </button>
         <button
           className={`settings__tab ${activeTab === 'roleplay' ? 'settings__tab--active' : ''}`}
           onClick={() => setActiveTab('roleplay')}
         >
           Roleplay Mode
-        </button>
-        <button
-          className={`settings__tab ${activeTab === 'utility' ? 'settings__tab--active' : ''}`}
-          onClick={() => setActiveTab('utility')}
-        >
-         Assistant Mode
         </button>
         <button
           className={`settings__tab ${activeTab === 'persona' ? 'settings__tab--active' : ''}`}
@@ -266,27 +227,16 @@ export default function Settings() {
 
       {/* Tab Content */}
       <div className="settings__content">
-        {/* Mode & Templates Tab */}
+        {/* World Templates Tab */}
         {activeTab === 'mode' && (
           <div className="settings__tab-content">
             <CollapsibleSection
-              title="Mode Selection"
-              description="Choose between Roleplay mode (character-based interaction) or Normal/Utility mode (standard assistant)"
-              defaultExpanded={true}
-            >
-              <ModeSelector
-                currentMode={settings.mode}
-                onChange={handleModeChange}
-              />
-            </CollapsibleSection>
-
-            <CollapsibleSection
               title="Choose Your World"
               description="Choose a preset or saved world to quickly configure your settings"
-              defaultExpanded={false}
+              defaultExpanded={true}
             >
               <TemplateSelector
-                selectedTemplateId={settings.meta.templateId}
+                selectedTemplateId={settings.meta?.templateId}
                 onSelect={handleTemplateSelect}
               />
             </CollapsibleSection>
@@ -382,22 +332,6 @@ export default function Settings() {
                   />
                 </div>
               )}
-            </CollapsibleSection>
-          </div>
-        )}
-
-        {/* Utility Settings Tab */}
-        {activeTab === 'utility' && (
-          <div className="settings__tab-content">
-            <CollapsibleSection
-              title="Assistant Mode"
-              description="Configure how the assistant behaves in non-roleplay mode"
-              defaultExpanded={true}
-            >
-              <UtilitySettingsPanel
-                settings={settings}
-                onChange={setSettings}
-              />
             </CollapsibleSection>
           </div>
         )}

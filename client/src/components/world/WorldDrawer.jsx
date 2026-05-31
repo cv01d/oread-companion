@@ -11,7 +11,7 @@ export default function WorldDrawer({ isOpen, onClose }) {
 
   const templates = useStore((s) => s.templates);
   const settings = useStore((s) => s.settings);
-  const setSettings = useStore((s) => s.setSettings);
+  const applyTemplate = useStore((s) => s.applyTemplate);
   const fetchTemplates = useStore((s) => s.fetchTemplates);
   const deleteTemplate = useStore((s) => s.deleteTemplate);
 
@@ -72,29 +72,13 @@ export default function WorldDrawer({ isOpen, onClose }) {
   const filteredDefault = filterTemplates(defaultTemplates);
   const hasResults = filteredUser.length > 0 || filteredDefault.length > 0;
 
-  const handleWorldClick = (template) => {
-    setSettings({
-      ...template.settings,
-      meta: {
-        ...template.settings.meta,
-        templateId: template.id,
-        isUserTemplate: template.isUserTemplate || false,
-        lastModified: new Date().toISOString(),
-      },
-    });
+  const handleWorldClick = async (template) => {
+    await applyTemplate(template);
     onClose();
   };
 
-  const handleClearWorld = () => {
-    setSettings({
-      ...settings,
-      meta: {
-        ...settings.meta,
-        templateId: null,
-        isUserTemplate: false,
-        lastModified: new Date().toISOString(),
-      },
-    });
+  const handleClearWorld = async () => {
+    await applyTemplate(null);
     onClose();
   };
 
@@ -131,7 +115,7 @@ export default function WorldDrawer({ isOpen, onClose }) {
         <div className={styles.worldName}>{template.name}</div>
         <div className={styles.worldMeta}>
           <span className={styles.worldCategory}>
-            {template.category === 'roleplay' ? 'Roleplay' : 'Utility'}
+            {template.category === 'utility' ? 'Utility' : 'Roleplay'}
           </span>
           {template.isUserTemplate && (
             <span className={styles.worldBadge}>My World</span>

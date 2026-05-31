@@ -17,10 +17,16 @@ export const createModelSlice = (set, get) => ({
       const data = await response.json();
 
       if (data.success) {
-        set({ models: data.models });
+        // oread-cli returns models as { id, provider, size, modified }. The GUI
+        // expects a `name` field, so normalize (keeping any existing name).
+        const models = (data.models || []).map(m => ({
+          ...m,
+          name: m.name || m.id
+        }));
+        set({ models });
 
         const state = get();
-        const firstModel = data.models.length > 0 ? data.models[0].name : null;
+        const firstModel = models.length > 0 ? models[0].name : null;
         if (!state.selectedModel && firstModel) {
           set({ selectedModel: firstModel });
         }
