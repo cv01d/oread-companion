@@ -3,7 +3,7 @@
 A privacy-first, **local** desktop-style GUI for immersive AI roleplay and writing. Design custom characters and
 worlds, then play out persistent, character-driven scenarios — all running on your own machine.
 
-Oread Companion is the **graphical front-end** for [**oread-cli**](../oread-cli), a local-first roleplay
+Oread Companion is the **graphical front-end** for [**oread-cli**](https://github.com/cv01d/oread-cli), a local-first roleplay
 engine. The CLI is the backend (database, memory, prompt-building, AI providers); this app is the
 richer **editing and play surface**. You can use whichever you prefer — the terminal UI or this GUI —
 on top of the same backend and the same saved worlds, characters, and sessions.
